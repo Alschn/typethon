@@ -7,7 +7,7 @@ Typethon to wymyślony język przypominający składnią Pythona i Typescript. P
 - język **silnie** i **statycznie** **typowany**
 - obsługuje typy danych: `int`, `float`, `str`, `bool`, `func`
 - obsługuje "nullowalność" zmiennych, operator `?:` oraz specjalną wartość `null`
-- zmienne mutowalne lub niemutowalne - `const` vs `let`
+- zmienne mutowalne lub niemutowalne - `let` vs `const`
 - operatory arytmetyczne `+`, `-`, `*`, `/`, `%`, `>`, `>=`, `<`, `<=`, `==`, `!=`
 - operatory logiczne `not`, `or`, `and`
 - operator wyłuskania wartości ze zmiennej nullowalnej `??`
