@@ -32,8 +32,12 @@ var3 = 5;                 // Error: Cannot modify constant variable
 ### `nullable`
 
 ```js
-let var1?: int;           // this will work
-let var2?: int = null;    // both var1 and var2 will be null
+/*
+ variables can be uninstantiated
+ both var1 and var2 will be null
+*/
+let var1?: int;
+let var2?: int = null;
 ```
 
 ### `nullable` - dozwolone operacje
