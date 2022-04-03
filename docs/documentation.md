@@ -1,19 +1,26 @@
 # TKOM - Interpreter języka `Typethon`
 
-Typethon to wymyślony język przypominający składnią Pythona i Typescript. Pozwala na definiowanie zmiennych mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimowe.
+## Opis
+
+Typethon to wymyślony język przypominający składnią języki Python i Typescript. 
+Pozwala na definiowanie zmiennych mutowalnych, niemutowalnych, a także "nullowalnych". 
+Obsługuje funkcje anonimowe.
 
 ## Założenia
 
 - język **silnie** i **statycznie** **typowany**
 - obsługuje typy danych: `int`, `float`, `str`, `bool`, `func`
 - obsługuje "nullowalność" zmiennych, operator `?:` oraz specjalną wartość `null`
-- zmienne mutowalne lub niemutowalne - `let` vs `const`
+- zmienne mogą być mutowalne lub niemutowalne - `let` vs `const`
 - operatory arytmetyczne `+`, `-`, `*`, `/`, `%`, `>`, `>=`, `<`, `<=`, `==`, `!=`
 - operatory logiczne `not`, `or`, `and`
-- operator wyłuskania wartości ze zmiennej nullowalnej `??`
-- oprócz zwykłych funkcji obsługiwane są również funkcje anonimowe (lambdy)
-- funkcje można przekazywać jako argument do innych funkcji
+- operator wyłuskania wartości ze zmiennej "nullowalnej" `??`
+- instrukcje warunkowe `if`, `elif`, `else`
+- pętla `while`
+- obsługa funkcji nazwanych oraz anonimowych (lambd) - definicje, wywołania
+- funkcję można przekazać jako argument do innych funkcji
 - funkcja może zwracać inną funkcję
+- możliwość dodawania komentarzy jedno i wieloliniowych
 
 ## Przykłady
 
@@ -130,7 +137,7 @@ def outer(): func(() => void) => {
     return inner;
 }
 
-const b: func(() => void) = func0();
+const b: func(() => void) = func0;
 const result: int = func1(1, 2);
 const fn: func((arg3: int) => int) = fun2(1, 2);
 const res: int = fn(3); // 6
@@ -285,19 +292,17 @@ Empty = "" ;
 
 ### Wymagania funkcjonalne
 
-- interfejs konsolowy, ścieżka do pliku do zinterpretowania podawana jako argument
+- wejście programu: ścieżka do pliku do zinterpretowania podawana jako argument linii poleceń
 - obsługa źródła tekstowego na potrzeby testów jednostkowych
-- ...
+- wyjście języka: standardowy strumień wyjścia
+- brak `hoistungu` zmiennych i funkcji (wymagana wcześniejsza deklaracja)
 
 ### Wymagania niefunkcjonalne
 
-- interpreter napisany w języku Python
+- program napisany w języku Python
 - program nie powinien kończyć się nie obsłużonym wyjątkiem
-- ...
+- wysokie pokrycie kodu testami
 
-## Zwięzły opis sposobu realizacji modułów, tokeny, struktury danych
-
-Source, Lexer, Parser, Interpreter...
 
 ## Obsługa błędów
 
@@ -305,14 +310,16 @@ Source, Lexer, Parser, Interpreter...
 
 ## Opis testowania
 
-Do testowania zostanie moduł `unittest` z biblioteki standardowej oraz zewnętrzna paczka `coverage` do pomiaru pokrycia kodu testami.
+Do testowania zostanie wykorzystany moduł `unittest` z biblioteki standardowej oraz zewnętrzna paczka `coverage` do pomiaru pokrycia kodu testami.
 
 Przeprowadzone zostaną:
 
 - testy jednostkowe - testowanie każdej metody, sprawdzanie przypadków częstych, skrajnych, złośliwych
-- testy integracyjne sprawdzające wspólne działanie modułów (np. Lexer + Parser)
+- testy integracyjne sprawdzające wspólne działanie modułów (m.in Lexer + Parser)
 
 ## Sposób uruchomienia
+
+Do uruchomienia programu wymagany jest Python w wersji minimum 3.8
 
 ```shell
 python cli.py -f <path_to_file>
