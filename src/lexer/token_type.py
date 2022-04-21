@@ -1,87 +1,119 @@
-from enum import Enum
+from enum import Enum, auto
+
+ETX_VALUE = "\x03"
 
 
-class TokenType(str, Enum):
-    ID = "ID"
+class TokenType(Enum):
+    ID = auto()
     # types
-    INT = "int"
-    FLOAT = "float"
-    STR = "str"
-    BOOL = "bool"
-    FUNC = "func"
-    VOID = "void"  # function return
+    INT = auto()
+    FLOAT = auto()
+    STR = auto()
+    BOOL = auto()
+    FUNC = auto()
+    VOID = auto()
     # variable declaration
-    CONST = "const"
-    LET = "let"
+    CONST = auto()
+    LET = auto()
     # reserved keywords
-    IF = "if"
-    ELIF = "elif"
-    ELSE = "else"
-    WHILE = "while"
-    RETURN = "return"
-    DEF = "def"
+    IF = auto()
+    ELIF = auto()
+    ELSE = auto()
+    WHILE = auto()
+    RETURN = auto()
+    DEF = auto()
     # reserved characters
-    LPAREN = "("
-    RPAREN = ")"
-    LCURLY = "{"
-    RCURLY = "}"
-    COMMA = ","
-    SEMI = ";"
+    LPAREN = auto()
+    RPAREN = auto()
+    LCURLY = auto()
+    RCURLY = auto()
+    COMMA = auto()
+    SEMI = auto()
     # arithmetic operators
-    PLUS = "+"
-    MINUS = "-"
-    MUL = "*"
-    DIV = "/"
-    MODULO = "%"
+    PLUS = auto()
+    MINUS = auto()
+    MUL = auto()
+    DIV = auto()
+    MODULO = auto()
     # comparison operators
-    EQ = "=="
-    NEQ = "!="
-    GT = ">"
-    LT = "<"
-    GTE = ">="
-    LTE = "<="
+    EQ = auto()
+    NEQ = auto()
+    GT = auto()
+    LT = auto()
+    GTE = auto()
+    LTE = auto()
     # logical operators
-    AND = "and"
-    OR = "or"
-    NOT = "not"
+    AND = auto()
+    OR = auto()
+    NOT = auto()
     # other operators
-    ASSIGN = "="
-    ARROW = "=>"
-    TYPE_ASSIGN = ":"
-    TYPE_ASSIGN_NULLABLE = "?:"
-    NULL_COALESCE = "??"
+    ASSIGN = auto()
+    ARROW = auto()
+    NULL_COALESCE = auto()
+    # type assignment
+    TYPE_ASSIGN = auto()
+    TYPE_ASSIGN_NULLABLE = auto()
     # VALUES
-    INT_VALUE = "INT_VALUE"
-    FLOAT_VALUE = "FLOAT_VALUE"
-    STR_VALUE = "STR_VALUE"
-    BOOL_VALUE = "BOOL_VALUE"
-    NULL_VALUE = "NULL_VALUE"
-    COMMENT = "COMMENT"
+    INT_VALUE = auto()
+    FLOAT_VALUE = auto()
+    STR_VALUE = auto()
+    # reserved values
+    NULL_VALUE = auto()
+    TRUE_VALUE = auto()
+    FALSE_VALUE = auto()
+    # comment
+    COMMENT = auto()
     # End Of Text
-    ETX = "\x03"
+    ETX = auto()
 
 
-RESERVED_KEYWORDS = {
-    # variable declaration
-    TokenType.CONST: "const",
-    TokenType.LET: "let",
-    # typing
-    TokenType.INT: "int",
-    TokenType.FLOAT: "float",
-    TokenType.STR: "str",
-    TokenType.BOOL: "bool",
-    # functions related (typing, definition, return)
-    TokenType.FUNC: "func",
-    TokenType.VOID: "void",
-    TokenType.DEF: "def",
-    TokenType.RETURN: "return",
-    # conditional statements and loop
-    TokenType.IF: "if",
-    TokenType.ELIF: "elif",
-    TokenType.ELSE: "else",
-    TokenType.WHILE: "while",
-    # logical operators
-    TokenType.AND: "and",
-    TokenType.OR: "or",
-    TokenType.NOT: "not",
+KEYWORDS = {
+    "const": TokenType.CONST,
+    "let": TokenType.LET,
+    "int": TokenType.INT,
+    "float": TokenType.FLOAT,
+    "str": TokenType.STR,
+    "bool": TokenType.BOOL,
+    "func": TokenType.FUNC,
+    "void": TokenType.VOID,
+    "def": TokenType.DEF,
+    "return": TokenType.RETURN,
+    "if": TokenType.IF,
+    "elif": TokenType.ELIF,
+    "else": TokenType.ELSE,
+    "while": TokenType.WHILE,
+    "and": TokenType.AND,
+    "or": TokenType.OR,
+    "not": TokenType.NOT,
+    "null": TokenType.NULL_VALUE,
+    "true": TokenType.TRUE_VALUE,
+    "false": TokenType.FALSE_VALUE
+}
+
+ONE_CHAR_OPS = {
+    "(": TokenType.LPAREN,
+    ")": TokenType.RPAREN,
+    "{": TokenType.LCURLY,
+    "}": TokenType.RCURLY,
+    ",": TokenType.COMMA,
+    ";": TokenType.SEMI,
+    "+": TokenType.PLUS,
+    "-": TokenType.MINUS,
+    "*": TokenType.MUL,
+    "/": TokenType.DIV,
+    "%": TokenType.MODULO,
+    "=": TokenType.ASSIGN,
+    ">": TokenType.GT,
+    "<": TokenType.LT,
+    ":": TokenType.TYPE_ASSIGN
+}
+
+TWO_CHAR_OPS = {
+    "==": TokenType.EQ,
+    "!=": TokenType.NEQ,
+    ">=": TokenType.GTE,
+    "<=": TokenType.LTE,
+    "=>": TokenType.ARROW,
+    "??": TokenType.NULL_COALESCE,
+    "?:": TokenType.TYPE_ASSIGN_NULLABLE
 }
