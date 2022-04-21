@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Generator
 
-from src.lexer.token import TokenType
+from src.lexer.token_type import ETX_VALUE
 
 
 class Source:
@@ -9,11 +9,10 @@ class Source:
     def __init__(self, text: Generator):
         self.iterator = iter(text)
 
-        # check if source is not empty
         try:
             self.current_char: str = next(self.iterator)
         except StopIteration:
-            self.current_char = TokenType.ETX
+            self.current_char = ETX_VALUE
 
         # start indexing from 1 - so that it is human readable
         self.line = 1
@@ -37,30 +36,24 @@ class Source:
                 self.column = 0
 
         except StopIteration:
-            self.current_char = TokenType.ETX
+            self.current_char = ETX_VALUE
 
 
 class FileSource(Source):
 
     def __init__(self, file_name: Path):
-        self.file = open(file_name, 'r')
+        self._file = open(file_name, 'r')
         generator = self.read_file_lazy()
         super().__init__(generator)
 
-    def read_file_lazy(self, chunk_size: int = 1024):
-        """Reads file in chunks and yields a character from a current chunk."""
+    def read_file_lazy(self):
+        """Reads single character from an open file"""
 
-        while True:
-            chunk = self.file.read(chunk_size)
-
-            if not chunk:
-                break
-
-            for char in chunk:
-                yield char
+        while c := self._file.read(1):
+            yield c
 
     def __del__(self):
-        self.file.close()
+        self._file.close()
 
 
 class StringSource(Source):
