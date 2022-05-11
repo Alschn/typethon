@@ -312,3 +312,14 @@ class Lexer:
 
         if self.source.current_char == ETX_VALUE:
             return Token(typ=TokenType.ETX)
+
+
+class LexerSkippingComments(Lexer):
+    """Lexer which does not return token with type Comment, but instead it continues building."""
+
+    def build_next_token(self) -> Token:
+        while token := super().build_next_token():
+            if token.type != TokenType.COMMENT:
+                break
+
+        return token
