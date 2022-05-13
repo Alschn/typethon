@@ -2,9 +2,8 @@
 
 ## Opis
 
-Typethon to wymyślony język przypominający składnią języki Python i Typescript. 
-Pozwala na definiowanie zmiennych mutowalnych, niemutowalnych, a także "nullowalnych". 
-Obsługuje funkcje anonimowe.
+Typethon to wymyślony język przypominający składnią języki Python i Typescript. Pozwala na definiowanie zmiennych
+mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimowe.
 
 ## Założenia
 
@@ -43,20 +42,23 @@ var3 = 5;                 // Error: Cannot modify constant variable
  variables can be uninstantiated
  both var1 and var2 will be null
 */
-let var1?: int;
-let var2?: int = null;
+let var1
+? : int;
+let var2
+? : int = null;
 ```
 
 ### `nullable` - dozwolone operacje
 
 ```js
-let var3?: int;
+let var3
+? : int;
 
 if (var3 == null) {
-    const b: int = var3 * 10;   // Error: Unallowed operation for a nullable variable
+  const b: int = var3 * 10;   // Error: Unallowed operation for a nullable variable
 } else {
-    const a: int = var3 + 3;    // this will work
-    print("Var3 nie jest nullem");
+  const a: int = var3 + 3;    // this will work
+  print("Var3 nie jest nullem");
 }
 ```
 
@@ -66,41 +68,49 @@ if (var3 == null) {
 let i: int = 0;
 
 while (i <= 100) {
-    if (i % 3 == 0 or i % 5 == 0) {
-        print("FizzBuzz");
-    }
+  if (i % 3 == 0 or
+  i % 5 == 0
+)
+  {
+    print("FizzBuzz");
+  }
 
-    elif (i % 3 == 0) {
-        print("Fizz");
-    }
+  elif(i % 3 == 0)
+  {
+    print("Fizz");
+  }
 
-    elif (i % 5 == 0) print("Buzz");    // shortened syntax for if, elif, else
+  elif(i % 5 == 0)
+  print("Buzz");    // shortened syntax for if, elif, else
 
-    else {
-        print(i);
-    }
+else
+  {
+    print(i);
+  }
 
-    i = i + 1;
+  i = i + 1;
 }
 ```
 
 ### `instrukcje zagnieżdżone`
 
 ```python
-let i: int = 0;
+let
+i: int = 0;
 
 if (1 + 2 == 3) {
-    if (12 > 4) {
-        if (i == 0) i = i + 1;
-        else {
-            if (i != 1) i = 1;
-        }
-    }
-    elif (false) i = i - 1;
+if (12 > 4) {
+if (i == 0) {i = i + 1;}
+else {
+if (i != 1) {i = 1;}
+}
+}
+elif (false) {i = i - 1;}
 } else {
-    while (true) {
-        while (i != 3) { i++; }
-    }
+while (true) {
+while (i != 3) {
+return 2 > 3 + 1 != 10;}
+}
 }
 ```
 
@@ -116,43 +126,78 @@ let b: int = 3 + "3"; // Error: Cannot concatenate type `int` with `str`
 
 ### deklaracja funkcji, zakres `globalny` i `lokalny`, wywołanie funkcji
 
-```js
-let var1?: int;   // global scope
+```
+let var1? : int;   // global scope
 
-def func0(): void => {}
-
-def func1(arg1: int, arg2: int): int => {
-    const var1: str = "Hello";  // var1 is in a function scope so redeclaring variables should work
-    return var1 + var2 + 3;
+def
+func()
+:
+void
+=>
+{
+  return;
 }
 
-def func2(arg1: int, arg2: int): func((arg3: int) => int) => {
-    return (arg3: int) => {
-        return arg1 + arg2 + arg3;
-    }
+def
+func0()
+:
+void
+=>
+{
 }
 
-def outer(): func(() => void) => {
-    const inner = () => {}
-    return inner;
+def
+func1(arg1
+:
+int, arg2
+:
+int
+):
+int => {
+  const var1: str = "Hello";  // var1 is in a function scope so redeclaring variables should work
+  return var1 + var2 + 3;
+}
+
+def
+func2(arg1
+:
+int, arg2
+:
+int
+):
+func((arg3: int) => int)
+=>
+{
+  return (arg3: int)
+:
+  int => {
+    return arg1 + arg2 + arg3;
+  }
+}
+
+def outer(): func(() => void) =>{
+  const inner = ():void => {};
+  return inner;
 }
 
 const b: func(() => void) = func0;
 const result: int = func1(1, 2);
-const fn: func((arg3: int) => int) = fun2(1, 2);
+const fn: func((int) => int) = fun2(1, 2);
 const res: int = fn(3); // 6
 outer()();
 ```
 
-### funkcje anonimowe, zwracanie innych funkcji (currying)
+### funkcje anonimowe, zwracanie innych funkcji, currying
 
-```js
+```
 // anonymous function returning another anonymous function
+
 const adder = (offset: int): func((x: int, y: int) => int) => {
   return (x: int, y: int): int => {
     return offset + x + y;
   };
-};
+}
+;
 
 const add_with_offset: func = adder(2); // outer function
 const sum_with_offset: int = add_with_offset(4, 5); // inner function
@@ -160,107 +205,123 @@ const sum_with_offset: int = add_with_offset(4, 5); // inner function
 
 ### równoważny zapis dla fukcji anonimowych
 
-```js
+```
 // lambda: syntax without return
-const substract = (x: int, y: int): int => x - y;
+const substract: func((x: int, y: int) => int) = (x: int, y: int): int => x - y;
 
 // lambda: standard syntax
-const substract = (x: int, y: int): int => {
+const substract: func((x: int, y: int) => int) = (x: int, y: int): int => {
   return x - y;
 };
 
 // downside of using shortened syntax with currying
-const a = (x: int): func((y: int) => func((z: int) => int)) => (y: int): func((z: int) => int) => (z: int) => x + y + z;
+const a = (x: int):func((int) => func((z: int) => int)) => (y: int):func((z: int) => int) => (z: int) => x + y + z;
 
 // syntax can be mixed
-const b = (x: int) => {
-    return (y: int) => x + y;
+const b: func((x: int) => func((y: int) => int)) = (x: int): func((y: int) => int) => {
+  return (y: int): int => x + y;
 }
 ```
 
 ### funkcje biblioteczne
 
-`print(arg)`  
-`str(arg)`
+`print(*args)`
 
 ---
 
 ## Gramatyka
 
 ```
-Program = ProgramStatement, { ProgramStatement } ;
+Program = { ProgramStatement } ;
 
 ProgramStatement = FuncDef | Statement ;
 
-FuncDef = ["def", Id], "(", Args ")", ":", ReturnType, "=>", FuncBody ;
+FuncDef = "def", Id, "(", Params ")", ":", ReturnType, "=>", FuncBody ;
 
-FuncBody = Body | ( Expression, [ ";" ] ) ;
+LambdaDef = "(", Params ")", ":", ReturnType, "=>", FuncBody ; 
 
-Args = [ Arg, { ",", Arg } ] ;
+FuncBody = Body | Expr  ; # Expr == shorter syntax
 
-Arg = Id, AssignOp, VarType ;
+Params = [ Param, { ",", Param } ] ;
+
+Param = Id, DeclareTypeOp, VarType ;
 
 Body = "{", { Statement }, "}" ;
 
-Statement = Conditional | Loop | StatementShort ;
+Statement = Conditional 
+        | Loop
+        | Declaration
+        | StatementShort
+        | Body ;
 
-StatementShort = Return | Assignment ;
+StatementShort = Return | IdOperation ;
 
-Loop = "while", "(", Expression, ")", Body ;
+Loop = "while", "(", Expr, ")", Body ;
 
-Conditional = IfStatement, { ElifStatement }, [ "else", CondBody ] ;
+FuncCall = "(", Arguments, ")", { "(", Arguments, ")" } ;
 
-IfStatement = "if", "(", Expression, ")", CondBody ;
+Arguments = [ Expr, { ",", Expr } ] ;
 
-ElifStatement = "elif", "(", Expression, ")", CondBody ;
+Return = "return", [ Expr ], ";" ;
 
-CondBody = StatementShort | Body ;
+Conditional = "if", "(", Expr, ")", Statement, { ElifStatement }, [ "else", Statement ] ;
 
-FuncCall = "(", Arguments, ")" ;
+ElifStatement = "elif", "(", Expr, ")", Statement ;
 
-Arguments = [ Expression, { ",", Expression } ] ;
+Expr = NullCoalExpr, { "??" , NullCoalExpr } ;
 
-Return = "return", Expression, ";" ;
+NullCoalExpr = OrExpr, { "or", OrExpr } ;
 
-Expression = SimpleExpression, [RelOp, SimpleExpression] ;
+OrExpr = AndExpr, { "and", AndExpr } ;
 
-SimpleExpression = Sign, AddTerm, { AddOp, Sign, AddTerm } ;
+AndExpr = EqExpr, { EqOp, EqExpr } ;
 
-AddTerm = MultTerm, { MultOp, MultTerm } ;
+EqExpr = CompFac, { CompOp, CompFac } ;
 
-MultTerm = Literal
-        | (Id, [ FuncCall ])
-        | "(", Expression, ")"
-        | FuncDef;
+CompFac = ["not"], AddFac ;
+
+AddFac = MultFac, { AddOp, MultFac } ;
+
+MultFac = Factor, { MultOp, Factor } ;
+
+Factor = (["-"], Literal)
+        | Id, [ FuncCall ]
+        | "(", [ Expr ] , ")" ;
 
 Literal = Number | String | Boolean | Null ;
 
-Assignment = [ DeclareKeyword ], Id, [ DeclareTypeOp, VarType ], "=", Expression, ";" ;
+IdOperation = Id, ( Assignment | FuncCall ), ";" ;
+
+Assignment = "=", Expr ;
+
+Declaration = DeclareKeyword, Id, DeclareTypeOp, VarType, "=", Expr, ";" ;
 
 DeclareKeyword = "const" | "let" ;
 
 DeclareTypeOp = "?:" | ":" ;
 
-AddOp = "+" | "-" | "or" ;
+AddOp = "+" | "-" ;
 
-MultOp = "*" | "/" | "%" | "and" ;
+MultOp = "*" | "/" | "%" ;
 
-RelOp = "<" | "<=" | ">" | ">=" | "==" | "!=" ;
+EqOp = "==" | "!=" ;
 
-VarType = str"
+CompOp = "<" | "<=" | ">" | ">=" ;
+
+VarType = "str"
         | "int"
         | "float"
         | "bool"
         | FuncType ;
 
-FuncType = "func", "(", "(", Args, ")", "=>", ReturnType, ")" ;
+FuncType = "func", "(", "(", Params, ")", "=>", ReturnType, ")" ;
 
 ReturnType = VarType | "void" ;
 
 String = "\"", {all utf-8 chars}, "\""
        | "\'", {all utf-8 chars}, "\'" ;
 
-Number = Sign, Integer, [".", { Integer }]
+Number = Integer, [".", { Integer }]
 
 Integer = Digit, { Digit } ;
 
@@ -275,15 +336,11 @@ Letter = "a" .. "Z"
         | "_" ;
 
 Digit = "0" .. "9" ;
+```
 
-Sign = "-" | Empty ;
-
-Comment = "/", "/", {all utf-8 chars}, Newline ;
-
-MultilineComment = "/", "*", {all utf-8 chars except "*" | Newline}, "*", "/" ;
-
-Newline = "\n" ;
-Empty = "" ;
+```
+Comment = "/", "/", {all utf-8 chars}, "\n" ;
+MultilineComment = "/", "*", {all utf-8 chars except "*" | "\n"}, "*", "/" ;
 ```
 
 ---
@@ -303,18 +360,19 @@ Empty = "" ;
 - program nie powinien kończyć się nie obsłużonym wyjątkiem
 - wysokie pokrycie kodu testami
 
-
 ## Obsługa błędów
 
-- każdy moduł będzie posiadał swoją własną klasę wyjątków, która będzie dziedziczyła po klasie bazowej `Error(Exception)`.
+- każdy moduł będzie posiadał swoją własną klasę wyjątków, która będzie dziedziczyła po klasie
+  bazowej `Error(Exception)`.
 
 ## Opis testowania
 
-Do testowania zostanie wykorzystany moduł `unittest` z biblioteki standardowej oraz zewnętrzna paczka `coverage` do pomiaru pokrycia kodu testami.
+Do testowania zostanie wykorzystany moduł `unittest` z biblioteki standardowej oraz zewnętrzna paczka `coverage` do
+pomiaru pokrycia kodu testami.
 
 Przeprowadzone zostaną:
 
-- testy jednostkowe - testowanie każdej metody, sprawdzanie przypadków częstych, skrajnych, złośliwych
+- testy jednostkowe - sprawdzanie przypadków częstych, skrajnych, złośliwych
 - testy integracyjne sprawdzające wspólne działanie modułów (m.in Lexer + Parser)
 
 ## Sposób uruchomienia
@@ -324,3 +382,9 @@ Do uruchomienia programu wymagany jest Python w wersji minimum 3.8
 ```shell
 python cli.py -f <path_to_file>
 ```
+
+
+# TODO
+- poprawić przykłady
+- krótszy syntax dla lambd i (funkcji) -- OPCJONALNIE
+- krótszy syntax dla while/if itd. -- OPCJONALNIE

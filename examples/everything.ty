@@ -35,9 +35,6 @@ def f(arg1: int, arg2: str): void => {
     // random comment
 }
 
-// immediately invoked lambda
-(): func(() => void) => {}();
-
 const increment: func((x: int) => int) = (x: int): int => x + 1;
 
 /*
