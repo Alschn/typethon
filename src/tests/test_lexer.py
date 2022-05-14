@@ -4,7 +4,7 @@ from string import ascii_lowercase as letters
 
 from parameterized import parameterized
 
-from src.errors.error import LexerError
+from src.errors.lexer import LexerError
 from src.lexer.lexer import Lexer
 from src.lexer.token_type import TokenType, KEYWORDS, ETX_VALUE
 from src.tests.utils import setup_lexer

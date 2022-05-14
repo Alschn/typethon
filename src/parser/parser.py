@@ -1,9 +1,9 @@
 from typing import Optional, Sequence, Union
 
-from src.errors.error import (
+from src.errors.parser import (
     UninitializedConstError, NotNullableError, UnexpectedTokenError,
     InvalidReturnTypeError, InvalidRightExpressionError,
-    MissingParameterError, MissingArgumentError, MissingLambdaExpressionBody
+    MissingParameterError, MissingArgumentError, MissingLambdaExpressionBody, InvalidTypeError, MissingTypeAssignment
 )
 from src.lexer.lexer import Lexer
 from src.lexer.token import Token
@@ -88,15 +88,19 @@ class Parser:
         )
 
     def try_parse_return_type(self) -> Type:
-        """"""
+        """Tries to parse variable type or void and return it.
+        If type is invalid, InvalidReturnTypeError is raised instead."""
 
-        if token := self.check_and_consume(TokenType.VOID):
-            return TYPES_MAPPING[token.type]()
+        try:
 
-        if var_type := self.try_parse_var_type():
-            return var_type
+            if token := self.check_and_consume(TokenType.VOID):
+                return TYPES_MAPPING[token.type]()
 
-        raise InvalidReturnTypeError(token)
+            if var_type := self.try_parse_var_type():
+                return var_type
+
+        except InvalidTypeError:
+            raise InvalidReturnTypeError(self.lexer.token)
 
     def try_parse_func_body(self) -> Optional[Statement]:
         """"""
@@ -131,9 +135,11 @@ class Parser:
         if not (id_token := self.check_and_consume(TokenType.ID)):
             return None
 
-        assign_token = self.expect_one_of_many_and_consume(
-            [TokenType.TYPE_ASSIGN, TokenType.TYPE_ASSIGN_NULLABLE]
-        )
+        if not (assign_token := self.check_one_of_many_and_consume(
+                [TokenType.TYPE_ASSIGN, TokenType.TYPE_ASSIGN_NULLABLE]
+        )):
+            raise MissingTypeAssignment(assign_token)
+
         param_type = self.try_parse_var_type()
         nullable = assign_token == TokenType.TYPE_ASSIGN_NULLABLE
 
@@ -143,14 +149,17 @@ class Parser:
         )
 
     def try_parse_var_type(self) -> Type:
-        """"""
+        """Tries to parse variable type, map it to one of Parser's type and return.
+        If fails, invalid type error is raised."""
 
         if func_type := self.try_parse_func_type():
             return func_type
 
-        prev_token = self.expect_one_of_many_and_consume(
-            [TokenType.STR, TokenType.INT, TokenType.FLOAT, TokenType.BOOL]
-        )
+        if not (prev_token := self.check_one_of_many_and_consume(
+                [TokenType.STR, TokenType.INT, TokenType.FLOAT, TokenType.BOOL]
+        )):
+            raise InvalidTypeError(prev_token)
+
         typ = TYPES_MAPPING[prev_token.type]
         return typ
 

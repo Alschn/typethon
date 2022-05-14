@@ -1,6 +1,6 @@
 from typing import Optional
 
-from src.errors.error import LexerError
+from src.errors.lexer import LexerError
 from src.lexer.position import Position
 from src.lexer.token import Token
 from src.lexer.token_type import TokenType, KEYWORDS, ETX_VALUE, ONE_CHAR_OPS, TWO_CHAR_OPS

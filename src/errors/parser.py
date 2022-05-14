@@ -1,22 +1,8 @@
-from src.lexer.position import Position
-
-
-class Error(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
-
-
-class LexerError(Error):
-    def __init__(self, message: str, position: Position):
-        super().__init__(message)
-        self.message = message
-        self.position = position
-
-    def __str__(self) -> str:
-        return f"{self.message} Line: {self.position.line} Column: {self.position.column}"
+from src.errors.base import Error
 
 
 class ParserError(Error):
+
     def __init__(self, current_token):
         self.token = current_token
 
@@ -60,6 +46,12 @@ class InvalidReturnTypeError(ParserError):
         return f"`{self.token.type}` is not a valid function return type. {self.token.position}"
 
 
+class MissingTypeAssignment(ParserError):
+
+    def __str__(self) -> str:
+        return f"Missing type assignment. Expected `:` or `?:`. {self.token.position}"
+
+
 class InvalidRightExpressionError(ParserError):
 
     def __str__(self) -> str:
@@ -82,8 +74,3 @@ class MissingLambdaExpressionBody(ParserError):
 
     def __str__(self) -> str:
         return f"Missing body definition in lambda expression. {self.token.position}"
-
-
-class InterpreterError(Error):
-    def __init__(self, message: str):
-        super().__init__(message)
