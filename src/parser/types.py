@@ -60,7 +60,7 @@ TYPES_MAPPING = {
 class LogicOperator(Enum):
     AND = auto()
     OR = auto()
-    # TODO rest
+    NOT = auto()
 
 
 class ComparisonOperator(Enum):
@@ -70,19 +70,20 @@ class ComparisonOperator(Enum):
     GT = auto()
     LTE = auto()
     LT = auto()
-    # TODO rest
+
 
 class ArithmeticOperator(Enum):
     PLUS = auto()
     MINUS = auto()
+    MUL = auto()
     DIV = auto()
     MODULO = auto()
-    # TODO rest
 
 
 OPERATORS = {
     TokenType.PLUS: ArithmeticOperator.PLUS,
     TokenType.MINUS: ArithmeticOperator.MINUS,
+    TokenType.MUL: ArithmeticOperator.MUL,
     TokenType.DIV: ArithmeticOperator.DIV,
     TokenType.MODULO: ArithmeticOperator.MODULO,
 
@@ -92,5 +93,7 @@ OPERATORS = {
     TokenType.LTE: ComparisonOperator.LTE,
     TokenType.GT: ComparisonOperator.GT,
     TokenType.LT: ComparisonOperator.LT,
-    # TODO rest
+
+    TokenType.AND: LogicOperator.AND,
+    TokenType.OR: LogicOperator.OR,
 }

@@ -18,7 +18,7 @@ from src.parser.objects.objects import (
     Identifier, EqualityExpression, LambdaExpression, InlineReturnStatement
 )
 from src.parser.objects.program import Program
-from src.parser.types import TYPES_MAPPING, Type, Func
+from src.parser.types import TYPES_MAPPING, Type, Func, OPERATORS
 
 VAR_TYPES = {TokenType.STR, TokenType.INT, TokenType.FLOAT, TokenType.BOOL, TokenType.FUNC}
 RETURN_TYPES = {*VAR_TYPES, TokenType.VOID}
@@ -424,7 +424,7 @@ class Parser:
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = BinaryExpression(
-                left_expr, operator, expr
+                left_expr, OPERATORS[operator.type], expr
             )
 
         return left_expr
@@ -440,7 +440,7 @@ class Parser:
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = NullCoalesceExpression(
-                left_expr, operator, expr
+                left_expr, OPERATORS[operator.type], expr
             )
 
         return left_expr
@@ -456,7 +456,7 @@ class Parser:
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = OrExpression(
-                left_expr, operator, expr
+                left_expr, OPERATORS[operator.type], expr
             )
 
         return left_expr
@@ -474,7 +474,7 @@ class Parser:
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = AndExpression(
-                left_expr, operator, expr
+                left_expr, OPERATORS[operator.type], expr
             )
 
         return left_expr
@@ -485,15 +485,14 @@ class Parser:
         left_expr = self.try_parse_comp_factor()
 
         while operator := self.check_one_of_many_and_consume([
-            TokenType.GT, TokenType.GTE,
-            TokenType.LT, TokenType.LTE,
+            TokenType.GT, TokenType.GTE, TokenType.LT, TokenType.LTE,
         ]):
 
             if not (expr := self.try_parse_comp_factor()):
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = EqualityExpression(
-                left_expr, operator, expr
+                left_expr, OPERATORS[operator.type], expr
             )
 
         return left_expr
@@ -520,7 +519,7 @@ class Parser:
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = AdditiveExpression(
-                left_expr, operator, expr
+                left_expr, OPERATORS[operator.type], expr
             )
 
         return left_expr
@@ -536,7 +535,7 @@ class Parser:
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = MultiplicativeExpression(
-                left_expr, operator, expr
+                left_expr, OPERATORS[operator.type], expr
             )
 
         return left_expr
@@ -561,12 +560,12 @@ class Parser:
         and information about potential negation with minus symbol."""
 
         seen_minus = self.check_and_consume(TokenType.MINUS)
-        if not (prev_token := self.check_one_of_many_and_consume(LITERALS)):
+        if not (literal_token := self.check_one_of_many_and_consume(LITERALS)):
             return None
 
-        typ = TYPES_MAPPING[prev_token.type]()
+        typ = TYPES_MAPPING[literal_token.type]()
 
-        match prev_token.type:
+        match literal_token.type:
             case TokenType.TRUE_VALUE:
                 value = True
             case TokenType.FALSE_VALUE:
@@ -574,7 +573,7 @@ class Parser:
             case TokenType.NULL_VALUE:
                 value = None
             case _:
-                value = prev_token.value
+                value = literal_token.value
 
         return Factor(
             Literal(typ, value),
