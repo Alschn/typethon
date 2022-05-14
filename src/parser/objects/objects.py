@@ -168,7 +168,7 @@ class Literal(Expression):
 
 class Parameter(Expression):
 
-    def __init__(self, symbol: str, typ: Type, nullable: bool = False, mutable: Optional[bool] = None):
+    def __init__(self, symbol: str, typ: Type, nullable: bool = False, mutable: bool = True):
         self.symbol = symbol
         self.type = typ
         self.nullable = nullable

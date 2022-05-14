@@ -3,7 +3,7 @@ from typing import Union
 
 from src.lexer.token_type import TokenType
 
-Value = Union[str, int, float, bool]
+Value = str | int | float | bool | None
 
 
 class Type:
@@ -80,6 +80,10 @@ class ArithmeticOperator(Enum):
     MODULO = auto()
 
 
+class OtherOperator(Enum):
+    NULL_COALESCE = auto()
+
+
 OPERATORS = {
     TokenType.PLUS: ArithmeticOperator.PLUS,
     TokenType.MINUS: ArithmeticOperator.MINUS,
@@ -96,4 +100,6 @@ OPERATORS = {
 
     TokenType.AND: LogicOperator.AND,
     TokenType.OR: LogicOperator.OR,
+
+    TokenType.NULL_COALESCE: OtherOperator.NULL_COALESCE
 }

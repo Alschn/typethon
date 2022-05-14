@@ -256,7 +256,8 @@ AddFac = MultFac, { AddOp, MultFac } ;
 
 MultFac = Factor, { MultOp, Factor } ;
 
-Factor = (["-"], Literal)
+Factor = ["-"], 
+          Literal
         | Id, [ FuncCall ]
         | "(", [ Expr ] , ")" ;
 

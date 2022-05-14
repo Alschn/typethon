@@ -1,5 +1,1 @@
-const adder: func((offset: int) => func((x: int, y: int) => int)) = (offset: int): func((x: int, y: int) => int) => {
-  return (x: int, y: int): int => {
-    return offset + x + y;
-  };
-};
+const a: func(() => void) = (b: int): str => { return ""; };
