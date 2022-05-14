@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Optional
 
-from src.parser.types import Type
+from src.parser.types import Type, Value
 
 
 class Statement:
@@ -47,18 +47,16 @@ class ReturnStatement(Statement):
         self.expression = return_expr
 
 
+class InlineReturnStatement(ReturnStatement):
+    pass
+
+
 class FunctionDefinition(Statement):
     def __init__(self, name: str, return_type: Any, arguments: list = None, body=None):
         self.name = name
         self.return_type = return_type
         self.arguments = arguments
         self.body = body
-
-
-class LambdaDefinition(FunctionDefinition):
-    def __init__(self, *args: Any, **kwargs: Any):
-        name = str(uuid.uuid4())
-        super().__init__(name, *args, **kwargs)
 
 
 class LambdaExpression(Expression):
@@ -163,9 +161,9 @@ class Identifier(Expression):
 
 class Literal(Expression):
 
-    def __init__(self, typ: Type):
+    def __init__(self, typ: Type, value: Value):
         self.type = typ
-        # self.value = value
+        self.value = value
 
 
 class Parameter(Expression):

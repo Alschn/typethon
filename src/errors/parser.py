@@ -74,3 +74,21 @@ class MissingLambdaExpressionBody(ParserError):
 
     def __str__(self) -> str:
         return f"Missing body definition in lambda expression. {self.token.position}"
+
+
+class MissingFunctionBody(ParserError):
+
+    def __str__(self) -> str:
+        return f"Missing body definition in function definition. {self.token.position}"
+
+
+class WhileLoopMissingCondition(ParserError):
+
+    def __str__(self) -> str:
+        return f"Missing condition in while loop. {self.token.position}"
+
+
+class WhileLoopMissingBody(ParserError):
+
+    def __str__(self) -> str:
+        return f"Missing body in while loop. {self.token.position}"
