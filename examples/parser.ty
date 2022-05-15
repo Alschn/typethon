@@ -1,1 +1,3 @@
-const a: func(() => void) = (b: int): str => { return ""; };
+def f(): func((a: int) => int) => {
+    return (a: int): func((a: int) => int) => a;
+}

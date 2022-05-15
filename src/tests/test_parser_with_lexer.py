@@ -4,20 +4,20 @@ from parameterized import parameterized
 
 from src.errors.parser import (
     UninitializedConstError, NotNullableError, UnexpectedTokenError, InvalidReturnTypeError,
-    MissingParameterError, WhileLoopMissingCondition, MissingTypeAssignment
+    MissingParameterError, WhileLoopMissingCondition, MissingTypeAssignment, InvalidConditionalExpression,
 )
 from src.parser.objects.objects import (
     DeclarationStatement, Variable, CompFactor, Factor, Literal, FunctionCall,
     AdditiveExpression, MultiplicativeExpression, Identifier, AssignmentStatement,
     NullCoalesceExpression, EqualityExpression, WhileLoopStatement, EmptyStatement,
     ReturnStatement, CompoundStatement, LambdaExpression,
-    InlineReturnStatement, Parameter
+    InlineReturnStatement, Parameter, BinaryExpression, IfStatement, ElseStatement, FunctionDefinition, ElifStatement
 )
 from src.parser.objects.program import Program
 from src.parser.types import (
     String, Integer, Float, ArithmeticOperator,
     LogicOperator, ComparisonOperator, Null, Bool,
-    Func, Void)
+    Func, Void, OtherOperator)
 from src.tests.utils import setup_parser
 
 
@@ -314,85 +314,7 @@ class AssignmentTests(unittest.TestCase):
                 pass
 
             case _:
-                self.fail()
-
-    def test_assignment_multiple_parenth_expressions(self):  # TODO fix this
-        text = "var = ( ( (1 * ( (3 - 1) + 5) / 9) ) );"
-        program = parse(text)
-        match program.objects:
-            case [
-                AssignmentStatement(
-                    symbol='var',
-                    # right_value=CompFactor(
-                    #     factor=Factor(
-                    #         value=CompFactor(
-                    #             factor=Factor(
-                    #                 value=CompFactor(
-                    #                     factor=Factor(
-                    #                         value=CompFactor(
-                    #                             factor=MultiplicativeExpression(
-                    #                                 left_value=MultiplicativeExpression(
-                    #                                     left_value=Factor(
-                    #                                         value=Literal(value=1, type=Integer()),
-                    #                                         minus=False
-                    #                                     ),
-                    #                                     operator=ArithmeticOperator.MUL,
-                    #                                     right_value=Factor(
-                    #                                         value=CompFactor(
-                    #                                             factor=AdditiveExpression(
-                    #                                                 left_value=Factor(
-                    #                                                     value=CompFactor(
-                    #                                                         factor=AdditiveExpression(
-                    #                                                             left_value=Factor(
-                    #                                                                 value=Literal(value=1, type=Integer()),
-                    #                                                                 minus=False
-                    #                                                             ),
-                    #                                                             operator=ArithmeticOperator.MINUS,
-                    #                                                             right_value=Factor(
-                    #                                                                 value=Literal(value=3, type=Integer()),
-                    #                                                                 minus=False
-                    #                                                             )
-                    #                                                         ),
-                    #                                                         negation=False
-                    #                                                     ),
-                    #                                                     minus=False
-                    #                                                 ),
-                    #                                                 operator=ArithmeticOperator.DIV,
-                    #                                                 right_value=Factor(
-                    #                                                     value=Literal(value=5, type=Integer()),
-                    #                                                     minus=False
-                    #                                                 )
-                    #                                             ),
-                    #                                             negation=False
-                    #                                         ),
-                    #                                         minus=False
-                    #                                     ),
-                    #                                 ),
-                    #                                 operator=ArithmeticOperator.DIV,
-                    #                                 right_value=Factor(
-                    #                                     value=Literal(value=9, type=Integer()),
-                    #                                     minus=False
-                    #                                 )
-                    #                             ),
-                    #                             negation=False
-                    #                         ),
-                    #                         minus=False
-                    #                     ),
-                    #                     negation=False
-                    #                 ),
-                    #                 minus=False
-                    #             )
-                    #         ),
-                    #         minus=False
-                    #     ),
-                    #     negation=False
-                    # )
-                )
-            ]:
-                pass
-
-            case _:
-                self.fail()
+                self.fail('Objects do not match!')
 
     def test_assignment_nested(self):
         # multiple assignments are not allowed
@@ -739,14 +661,63 @@ class WhileLoopTests(unittest.TestCase):
                 pass
 
             case _:
-                self.fail()
+                self.fail('Objects do not match!')
 
     def test_while_loop_complex_condition(self):
         text = """
-        while ((a() * 15) or True and 0) {}
+        while ((a() * 15) or true ?? f()()) {}
         """
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                WhileLoopStatement(
+                    body=EmptyStatement(),
+                    condition=BinaryExpression(
+                        left_value=NullCoalesceExpression(
+                            left_value=CompFactor(
+                                factor=Factor(
+                                    value=CompFactor(
+                                        factor=MultiplicativeExpression(
+                                            left_value=Factor(
+                                                value=FunctionCall(name='a', arguments=[[]]),
+                                                minus=False
+                                            ),
+                                            operator=ArithmeticOperator.MUL,
+                                            right_value=Factor(
+                                                value=Literal(value=15, type=Integer()),
+                                                minus=False
+                                            )
+                                        ),
+                                        negation=False
+                                    ),
+                                    minus=False
+                                ),
+                                negation=False
+                            ),
+                            operator=LogicOperator.OR,
+                            right_value=CompFactor(
+                                factor=Factor(
+                                    value=Literal(value=True, type=Bool()),
+                                    minus=False
+                                ),
+                                negation=False
+                            )
+                        ),
+                        operator=OtherOperator.NULL_COALESCE,
+                        right_value=CompFactor(
+                            factor=Factor(
+                                value=FunctionCall(name='f', arguments=[[], []]),
+                                minus=False
+                            ),
+                            negation=False
+                        )
+                    )
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_while_loop_multiple_statements(self):
         text = """
@@ -755,7 +726,37 @@ class WhileLoopTests(unittest.TestCase):
             let a?: bool;
         }
         """
-        # TODO assertions
+        program = parse(text)
+        match program.objects:
+            case [
+                WhileLoopStatement(
+                    body=CompoundStatement(
+                        statements=[
+                            DeclarationStatement(
+                                left_value=Variable(name='a', nullable=False, mutable=False, type=Integer()),
+                                right_value=CompFactor(
+                                    factor=Factor(
+                                        value=Literal(value=5, type=Integer()),
+                                        minus=False
+                                    ),
+                                    negation=False
+                                )
+                            ),
+                            DeclarationStatement(
+                                left_value=Variable(name='a', nullable=True, mutable=True, type=Bool()),
+                                right_value=None
+                            )
+                        ]
+                    ),
+                    condition=CompFactor(
+
+                    ),
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_while_loop_nested_mixed_statements(self):
         text = """while (i < 1000) {
@@ -772,15 +773,106 @@ class WhileLoopTests(unittest.TestCase):
         }
         """
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                WhileLoopStatement(
+                    body=CompoundStatement(
+                        statements=[
+                            IfStatement(
+                                condition=CompFactor(
+                                    factor=Factor(
+                                        value=Identifier(name='a'),
+                                        minus=False
+                                    ),
+                                    negation=False
+                                ),
+                                elif_statements=[],
+                                else_statement=ElseStatement(
+                                    statement=CompoundStatement(
+                                        statements=[
+                                            WhileLoopStatement(
+                                                body=CompoundStatement(
+                                                    statements=[
+                                                        DeclarationStatement(
+                                                            left_value=Variable(name='a', type=Integer(), mutable=False,
+                                                                                nullable=False),
+                                                            right_value=CompFactor(
+                                                                factor=Factor(
+                                                                    value=Literal(value=5, type=Integer()),
+                                                                    minus=False
+                                                                ),
+                                                                negation=False
+                                                            )
+                                                        ),
+                                                        AssignmentStatement(
+                                                            symbol='i',
+                                                            right_value=CompFactor(
+                                                                factor=MultiplicativeExpression(
+                                                                    left_value=Factor(
+                                                                        value=Identifier(name='a'),
+                                                                        minus=False
+                                                                    ),
+                                                                    operator=ArithmeticOperator.MUL,
+                                                                    right_value=Factor(
+                                                                        value=CompFactor(
+                                                                            factor=Factor(
+                                                                                value=Literal(value=5, type=Integer()),
+                                                                                minus=True
+                                                                            ),
+                                                                            negation=False
+                                                                        ),
+                                                                        minus=True
+                                                                    ),
+                                                                )
+                                                            )
+                                                        )
+                                                    ]
+                                                ),
+                                                condition=CompFactor(
+                                                    factor=Factor(
+                                                        value=Identifier(name='False'),
+                                                        minus=False
+                                                    ),
+                                                    negation=False
+                                                )
+                                            )
+                                        ]
+                                    )
+                                )
+                            )
+                        ]
+                    ),
+                    condition=EqualityExpression(
+                        left_value=CompFactor(
+                            factor=Factor(
+                                value=Identifier(name='i'),
+                                minus=False
+                            ),
+                            negation=False
+                        ),
+                        operator=ComparisonOperator.LT,
+                        right_value=CompFactor(
+                            factor=Factor(
+                                value=Literal(value=1000, type=Integer()),
+                                minus=False
+                            ),
+                            negation=False
+                        )
+                    )
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_while_loop_missing_parentheses(self):
-        text = "while True"
+        text = "while true"
         with self.assertRaises(UnexpectedTokenError):
             parse(text)
 
     def test_while_loop_condition_parentheses_not_closed(self):
-        text = "while (True"
+        text = "while (true"
         with self.assertRaises(UnexpectedTokenError):
             parse(text)
 
@@ -795,78 +887,321 @@ class IfStatementTests(unittest.TestCase):
     def test_if_statement(self):
         text = "if (true) { const a: int = 10; }"
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                IfStatement(
+                    condition=CompFactor(
+                        factor=Factor(
+                            value=Literal(value=True, type=Bool()),
+                            minus=False
+                        ),
+                        negation=False
+                    ),
+                    elif_statements=[],
+                    else_statement=None,
+                    statement=CompoundStatement(
+                        statements=[
+                            DeclarationStatement(
+                                left_value=Variable(name='a', mutable=False, nullable=False, type=Integer()),
+                                right_value=CompFactor(
+                                    factor=Factor(
+                                        value=Literal(value=10, type=Integer()),
+                                        minus=False
+                                    ),
+                                    negation=False
+                                )
+                            )
+                        ]
+                    )
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_without_body(self):
         text = "if (1 < 0) {}"
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                IfStatement(
+                    condition=EqualityExpression(
+                        left_value=CompFactor(
+                            factor=Factor(
+                                value=Literal(value=1, type=Integer()),
+                                minus=False
+                            ),
+                            negation=False
+                        ),
+                        operator=ComparisonOperator.LT,
+                        right_value=CompFactor(
+                            factor=Factor(
+                                value=Literal(value=0, type=Integer()),
+                                minus=False
+                            ),
+                            negation=False
+                        )
+                    ),
+                    elif_statements=[],
+                    else_statement=None,
+                    statement=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_without_condition(self):
         text = "if ()"
+        with self.assertRaises(InvalidConditionalExpression):
+            parse(text)
 
     def test_if_statement_missing_condition_in_elif(self):
         text = "if (a) {} elif () {}"
+        with self.assertRaises(InvalidConditionalExpression):
+            parse(text)
 
     def test_if_statement_condition_not_in_parentheses(self):
         text = "if True"
+        with self.assertRaises(UnexpectedTokenError):
+            parse(text)
 
     def test_if_statement_no_statement(self):
         text = "if (True) 1 + 1;"
+        with self.assertRaises(UnexpectedTokenError):
+            parse(text)
 
     def test_if_statement_with_elif(self):
         text = """
-        if (False) {}
-        elif (True) {}
+        if (true) {}
+        elif (false) {}
         """
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                IfStatement(
+                    condition=CompFactor(
+                        factor=Factor(
+                            value=Literal(value=True, type=Bool()),
+                            minus=False
+                        ),
+                        negation=False
+                    ),
+                    elif_statements=[
+                        ElifStatement(
+                            statement=EmptyStatement()
+                        )
+                    ],
+                    else_statement=None,
+                    statement=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_with_multiple_elif(self):
         text = """
-        if (True) {}
-        elif (True) {}
-        elif (False) {}
+        if (true) {}
+        elif (true) {}
+        elif (false) {}
         """
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                IfStatement(
+                    condition=CompFactor(
+                        factor=Factor(
+                            value=Literal(value=True, type=Bool()),
+                            minus=False
+                        ),
+                        negation=False
+                    ),
+                    elif_statements=[
+                        ElifStatement(
+                            condition=CompFactor(
+                                factor=Factor(
+                                    value=Literal(value=True, type=Bool()),
+                                    minus=False
+                                ),
+                                negation=False
+                            ),
+                            statement=EmptyStatement()
+                        ),
+                        ElifStatement(
+                            condition=CompFactor(
+                                factor=Factor(
+                                    value=Literal(value=False, type=Bool()),
+                                    minus=False
+                                ),
+                                negation=False
+                            ),
+                            statement=EmptyStatement()
+                        )
+                    ],
+                    else_statement=None,
+                    statement=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_with_else(self):
         text = """
-        if (a + b) {}
-        else { print("test"); }
+        if (a + b) { print("if"); }
+        else { print("else"); }
         """
         program = parse(text)
+        match program.objects:
+            case [
+                IfStatement(
+
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_with_elif_else(self):
         text = """
-        if (False) {}
-        elif (False) {}
+        if (true) {}
+        elif (false) {}
         else {}
         """
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                IfStatement(
+                    condition=CompFactor(
+                        factor=Factor(
+                            value=Literal(value=True, type=Bool()),
+                            minus=False
+                        ),
+                        negation=False
+                    ),
+                    elif_statements=[
+                        ElifStatement(
+                            condition=CompFactor(
+                                factor=Factor(
+                                    value=Literal(value=False, type=Bool()),
+                                    minus=False
+                                ),
+                                negation=False
+                            ),
+                            statement=EmptyStatement()
+                        )
+                    ],
+                    else_statement=ElseStatement(
+                        statement=EmptyStatement()
+                    ),
+                    statement=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_complex_condition(self):
-        text = """
-        if (a * c - 15 / (d())) {}
-        """
+        text = "if (not a * c - -15 / (d())) {}"
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                IfStatement(
+                    condition=CompFactor(
+                        factor=AdditiveExpression(
+                            left_value=MultiplicativeExpression(
+                                left_value=Factor(
+                                    value=Identifier(name='a'),
+                                    minus=False
+                                ),
+                                operator=ArithmeticOperator.MUL,
+                                right_value=Factor(
+                                    value=Identifier(name='c'),
+                                    minus=False
+                                )
+                            ),
+                            operator=ArithmeticOperator.MINUS,
+                            right_value=MultiplicativeExpression(
+                                left_value=Factor(
+                                    value=Literal(value=15, type=Integer()),
+                                    minus=True
+                                ),
+                                operator=ArithmeticOperator.DIV,
+                                right_value=Factor(
+                                    value=CompFactor(
+                                        factor=Factor(
+                                            value=FunctionCall(name='d', arguments=[[]]),
+                                            minus=False
+                                        ),
+                                        negation=False
+                                    ),
+                                    minus=False
+                                ),
+                            )
+                        ),
+                        negation=True
+                    ),
+                    elif_statements=[],
+                    else_statement=None,
+                    statement=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_function_call_condition(self):
         text = """
-        if (f()) { print('najs'); }
+        if (f()) {}
         """
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+                IfStatement(
+                    condition=CompFactor(
+                        factor=Factor(
+                            value=FunctionCall(name='f', arguments=[[]]),
+                            minus=False
+                        ),
+                        negation=False
+                    ),
+                    elif_statements=[],
+                    else_statement=None,
+                    statement=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_if_statement_nested(self):
         text = """
         
         """
         program = parse(text)
-        # TODO assertions
+        match program.objects:
+            case [
+
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
+
+    def test_if_statement_complex_body(self):
+        text = """
+        
+        """
+        program = parse(text)
 
 
 class FuncDefTests(unittest.TestCase):
@@ -881,7 +1216,64 @@ class FuncDefTests(unittest.TestCase):
         }
         """
         program = parse(text)
-        # TODO asserts
+        match program.objects:
+            case [
+                FunctionDefinition(
+                    name='function',
+                    return_type=Integer(),
+                    arguments=[
+                        Parameter(symbol='arg1', type=Integer(), nullable=False, mutable=False),
+                        Parameter(symbol='arg2', type=Bool(), nullable=False, mutable=False)
+                    ],
+                    body=CompoundStatement(
+                        statements=[
+                            IfStatement(
+                                condition=CompFactor(
+                                    factor=Factor(
+                                        value=Identifier(name='arg2'),
+                                        minus=False
+                                    ),
+                                    negation=False
+                                ),
+                                elif_statements=[],
+                                else_statement=None,
+                                statement=CompoundStatement(
+                                    statements=[
+                                        ReturnStatement(
+                                            expression=CompFactor(
+                                                factor=MultiplicativeExpression(
+                                                    left_value=Factor(
+                                                        value=Identifier(name='arg1'),
+                                                        minus=False
+                                                    ),
+                                                    operator=ArithmeticOperator.MUL,
+                                                    right_value=Factor(
+                                                        value=Literal(value=3, type=Integer()),
+                                                        minus=False
+                                                    )
+                                                ),
+                                                negation=False
+                                            )
+                                        )
+                                    ]
+                                )
+                            ),
+                            ReturnStatement(
+                                expression=CompFactor(
+                                    factor=Factor(
+                                        value=Identifier(name='arg1')
+                                    ),
+                                    negation=False
+                                )
+                            )
+                        ]
+                    )
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_func_def_no_parameters(self):
         text = """
@@ -890,7 +1282,38 @@ class FuncDefTests(unittest.TestCase):
         }
         """
         program = parse(text)
-        # TODO asserts
+        match program.objects:
+            case [
+                FunctionDefinition(
+                    name='function',
+                    return_type=Integer(),
+                    arguments=[],
+                    body=CompoundStatement(
+                        statements=[
+                            ReturnStatement(
+                                expression=CompFactor(
+                                    factor=AdditiveExpression(
+                                        left_value=Factor(
+                                            value=Literal(value=1, type=Integer()),
+                                            minus=False
+                                        ),
+                                        operator=ArithmeticOperator.PLUS,
+                                        right_value=Factor(
+                                            value=Literal(value=2, type=Integer()),
+                                            minus=False
+                                        )
+                                    ),
+                                    negation=False
+                                )
+                            )
+                        ]
+                    )
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_func_def_return_type_missing(self):
         text = "def function() => {}"
@@ -905,22 +1328,81 @@ class FuncDefTests(unittest.TestCase):
     def test_func_def_one_parameter(self):
         text = "def function(arg1: bool): void => {}"
         program = parse(text)
-        # TODO asserts
+        match program.objects:
+            case [
+                FunctionDefinition(
+                    name='function',
+                    arguments=[
+                        Parameter(symbol='arg1', type=Bool(), mutable=False, nullable=False)
+                    ],
+                    return_type=Void(),
+                    body=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_func_def_multiple_parameters(self):
         text = "def function(arg1: bool, arg2: str): void => {}"
         program = parse(text)
-        # TODO asserts
+        match program.objects:
+            case [
+                FunctionDefinition(
+                    name='function',
+                    arguments=[
+                        Parameter(symbol='arg1', type=Bool(), mutable=False, nullable=False),
+                        Parameter(symbol='arg2', type=String(), mutable=False, nullable=False)
+                    ],
+                    return_type=Void(),
+                    body=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_func_def_no_return(self):
         text = "def function(): void => {}"
         program = parse(text)
-        # TODO asserts
+        match program.objects:
+            case [
+                FunctionDefinition(
+                    name='function',
+                    arguments=[],
+                    return_type=Void(),
+                    body=EmptyStatement()
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_func_def_bare_return(self):
         text = "def function(): void => { return; }"
         program = parse(text)
-        # TODO asserts
+        match program.objects:
+            case [
+                FunctionDefinition(
+                    name='function',
+                    arguments=[],
+                    return_type=Void(),
+                    body=CompoundStatement(
+                        statements=[
+                            ReturnStatement(
+                                expression=None
+                            )
+                        ]
+                    )
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail('Objects do not match!')
 
     def test_func_def_function_name_keyword(self):
         text = "def func(): void => {}"
@@ -947,7 +1429,64 @@ class FuncDefTests(unittest.TestCase):
         }
         """
         program = parse(text)
-        # TODO asserts
+        match program.objects:
+            case [
+                FunctionDefinition(
+                    name='f',
+                    return_type=Func(
+                        input_types=[Parameter(symbol='a', type=Integer(), nullable=False, mutable=False)],
+                        output_type=Integer()
+                    ),
+                    arguments=[],
+                    body=CompoundStatement(
+                        statements=[
+                            ReturnStatement(
+                                expression=CompFactor(
+                                    factor=Factor(
+                                        value=CompFactor(
+                                            factor=Factor(
+                                                value=LambdaExpression(
+                                                    return_type=Func(
+                                                        input_types=[
+                                                            Parameter(
+                                                                symbol='a', type=Integer(), nullable=False,
+                                                                mutable=False
+                                                            )
+                                                        ],
+                                                        output_type=Integer()
+                                                    ),
+                                                    arguments=[
+                                                        Parameter(
+                                                            symbol='a', type=Integer(), nullable=False, mutable=False
+                                                        )
+                                                    ],
+                                                    body=InlineReturnStatement(
+                                                        expression=CompFactor(
+                                                            factor=Factor(
+                                                                value=Identifier(name='a'),
+                                                                minus=False
+                                                            ),
+                                                            negation=False
+                                                        )
+                                                    )
+                                                ),
+                                                minus=False
+                                            ),
+                                            negation=False
+                                        ),
+                                        minus=False
+                                    ),
+                                    negation=False
+                                )
+                            )
+                        ]
+                    )
+                )
+            ]:
+                pass
+
+            case _:
+                self.fail()
 
     def test_func_def_return_nested_lambda_functions(self):
         text = """
@@ -958,7 +1497,7 @@ class FuncDefTests(unittest.TestCase):
         }
         """
         program = parse(text)
-        # TODO asserts
+        self.assertIsNotNone(program)  # TODO asserts
 
 
 class LambdaTests(unittest.TestCase):
@@ -1008,7 +1547,7 @@ class LambdaTests(unittest.TestCase):
                 pass
 
             case _:
-                self.fail()
+                self.fail('Objects do not match!')
 
     def test_lambda_function_assignment(self):
         text = "a = (b: int): str => { return ''; };"
@@ -1055,7 +1594,7 @@ class LambdaTests(unittest.TestCase):
                 pass
 
             case _:
-                self.fail()
+                self.fail('Objects do not match!')
 
     def test_lambda_trailing_comma_in_args(self):
         text = "a = (a: int,) => {}"
@@ -1079,14 +1618,14 @@ class LambdaTests(unittest.TestCase):
         };
         """
         program = parse(text)
-        # TODO asserts
+        self.assertIsNotNone(program)  # TODO asserts
 
     def test_lambda_return_type_inline_func(self):
         text = """
         const a: int = (): func((a: int) => int) => (a: int): int => a;
         """
         program = parse(text)
-        # TODO asserts
+        self.assertIsNotNone(program)  # TODO asserts
 
     def test_lambda_empty_args(self):
         text = "a = (): void => {};"
@@ -1111,7 +1650,7 @@ class LambdaTests(unittest.TestCase):
                 pass
 
             case _:
-                self.fail()
+                self.fail('Objects do not match!')
 
     def test_lambda_func_return_type_invalid_definition(self):
         text = """a = (): double => {};"""
@@ -1123,7 +1662,7 @@ class LambdaTests(unittest.TestCase):
         const a: int = (): func((a: int) => func((b: int) => int)) => (a: int): func((b: int) => int) => a + b;
         """
         program = parse(text)
-        # TODO
+        self.assertIsNotNone(program)  # TODO asserts
 
     def test_lambda_func_return_type_missing_paren_around_args(self):
         text = "a = (a: int, b: str): func(c: float, d: float => void) => {};"
@@ -1207,7 +1746,7 @@ class ReturnStatementTests(unittest.TestCase):
                 pass
 
             case _:
-                self.fail()
+                self.fail('Objects do not match!')
 
     def test_return_with_expression(self):
         text = "return (a + b) or not 35;"
@@ -1250,7 +1789,7 @@ class ReturnStatementTests(unittest.TestCase):
                 pass
 
             case _:
-                self.fail()
+                self.fail('Objects do not match!')
 
     def test_return_without_semi(self):
         text = "return"

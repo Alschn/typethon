@@ -92,3 +92,9 @@ class WhileLoopMissingBody(ParserError):
 
     def __str__(self) -> str:
         return f"Missing body in while loop. {self.token.position}"
+
+
+class InvalidConditionalExpression(ParserError):
+
+    def __str__(self) -> str:
+        return f"Invalid condition in conditional statement. {self.token.position}"

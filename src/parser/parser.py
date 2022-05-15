@@ -5,7 +5,7 @@ from src.errors.parser import (
     InvalidReturnTypeError, InvalidRightExpressionError,
     MissingParameterError, MissingArgumentError, MissingLambdaExpressionBody,
     InvalidTypeError, MissingTypeAssignment,
-    WhileLoopMissingCondition, WhileLoopMissingBody, MissingFunctionBody
+    WhileLoopMissingCondition, WhileLoopMissingBody, MissingFunctionBody, InvalidConditionalExpression
 )
 from src.lexer.lexer import Lexer
 from src.lexer.token import Token
@@ -369,7 +369,8 @@ class Parser:
 
         self.expect_and_consume(TokenType.LPAREN)
 
-        expr = self.try_parse_expression()
+        if not (expr := self.try_parse_expression()):
+            raise InvalidConditionalExpression(self.lexer.token)
 
         self.expect_and_consume(TokenType.RPAREN)
 
@@ -395,7 +396,8 @@ class Parser:
 
         self.expect_and_consume(TokenType.LPAREN)
 
-        expr = self.try_parse_expression()
+        if not (expr := self.try_parse_expression()):
+            raise InvalidConditionalExpression(self.lexer.token)
 
         self.expect_and_consume(TokenType.RPAREN)
 
