@@ -211,8 +211,6 @@ ProgramStatement = FuncDef | Statement ;
 
 FuncDef = "def", Id, "(", Params ")", ":", ReturnType, "=>", FuncBody ;
 
-LambdaDef = "(", Params ")", ":", ReturnType, "=>", FuncBody ; 
-
 FuncBody = Body | Expr ;
 
 Params = [ Param, { ",", Param } ] ;
@@ -259,8 +257,10 @@ MultFac = NegFac, { MultOp, NegFac } ;
 NegFac = ["-"], Factor ;
 
 Factor =  Literal
-        | Id, [ FuncCall ]
-        | "(", [ Expr ] , ")" ;
+        | Id, [ FuncCall | RestOfLambdaDef]
+        | "(", [ Expr ] , ")"  ;
+
+RestOfLambdaDef = DeclareTypeOp, VarType, { ",", Param }
 
 Literal = Number | String | Boolean | Null ;
 

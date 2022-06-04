@@ -672,8 +672,9 @@ class Parser:
         match expression:
             # lambda expression is handled as nested expression, it has already been parsed,
             # and should not have an extra closing parenthesis
-            case CompFactor(factor=Factor(value=LambdaExpression())):
-                pass
+            case CompFactor(factor=NegFactor(factor=Factor(value=LambdaExpression()))):
+                # simplify structure (no information is lost)
+                return Factor(value=expression.factor.factor.value)
 
             # require closing parenthesis in other cases
             case _:

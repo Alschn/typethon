@@ -1,9 +1,9 @@
 // lambda: standard syntax
-const substract = (x: int, y: int): int => {
+const substract: func((x: int, y: int) => int) = (x: int, y: int): int => {
   return x - y;
 };
 
 // shortened lambda syntax - without return
-const substract = (x: int, y: int): int => x - y;
+const substract: func((x: int, y: int) => int) = (x: int, y: int): int => x - y;
 
-const a: func((x: int) => (func((y: int)) => int)) = (x: int): func((y: int) => int) => (y: int): int => x * y;
+const a: func((x: int) => func((y: int) => int)) = (x: int): func((y: int) => int) => (y: int): int => x * y;

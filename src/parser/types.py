@@ -7,7 +7,12 @@ Value = str | int | float | bool | None
 
 
 class Type:
-    pass
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __str__(self):
+        return self.__class__.__name__
 
 
 class Integer(Type):
@@ -39,6 +44,12 @@ class Func(Type):
     def __init__(self, arguments_types, return_type: Type):
         self.input_types = arguments_types
         self.output_type = return_type
+
+    def __eq__(self, other):
+        if not hasattr(other, 'input_types') or not hasattr(other, 'output_type'):
+            return False
+
+        return self.input_types == other.input_types and self.output_type == other.output_type
 
 
 TYPES_MAPPING = {
