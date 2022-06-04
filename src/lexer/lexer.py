@@ -1,6 +1,6 @@
 from typing import Optional
 
-from src.errors.error import LexerError
+from src.errors.lexer import LexerError
 from src.lexer.position import Position
 from src.lexer.token import Token
 from src.lexer.token_type import TokenType, KEYWORDS, ETX_VALUE, ONE_CHAR_OPS, TWO_CHAR_OPS
@@ -312,3 +312,14 @@ class Lexer:
 
         if self.source.current_char == ETX_VALUE:
             return Token(typ=TokenType.ETX)
+
+
+class LexerSkippingComments(Lexer):
+    """Lexer which does not return token with type Comment, but instead it continues building."""
+
+    def build_next_token(self) -> Token:
+        while token := super().build_next_token():
+            if token.type != TokenType.COMMENT:
+                break
+
+        return token

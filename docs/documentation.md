@@ -2,15 +2,14 @@
 
 ## Opis
 
-Typethon to wymyślony język przypominający składnią języki Python i Typescript. 
-Pozwala na definiowanie zmiennych mutowalnych, niemutowalnych, a także "nullowalnych". 
-Obsługuje funkcje anonimowe.
+Typethon to wymyślony język przypominający składnią języki Python i Typescript. Pozwala na definiowanie zmiennych
+mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimowe (wyrażenia lambda).
 
 ## Założenia
 
 - język **silnie** i **statycznie** **typowany**
 - obsługuje typy danych: `int`, `float`, `str`, `bool`, `func`
-- obsługuje "nullowalność" zmiennych, operator `?:` oraz specjalną wartość `null`
+- obsługuje "nullowalność" zmiennych (`?:` zamiast `:` przy deklaracji typu) oraz specjalną wartość `null`
 - zmienne mogą być mutowalne lub niemutowalne - `let` vs `const`
 - operatory arytmetyczne `+`, `-`, `*`, `/`, `%`, `>`, `>=`, `<`, `<=`, `==`, `!=`
 - operatory logiczne `not`, `or`, `and`
@@ -18,7 +17,8 @@ Obsługuje funkcje anonimowe.
 - instrukcje warunkowe `if`, `elif`, `else`
 - pętla `while`
 - obsługa funkcji nazwanych oraz anonimowych (lambd) - definicje, wywołania
-- funkcję można przekazać jako argument do innych funkcji
+- funkcję/wyrażenie lambda można przekazać jako argument do innych funkcji
+- funkcja zwraca jedną wartość
 - funkcja może zwracać inną funkcję
 - możliwość dodawania komentarzy jedno i wieloliniowych
 
@@ -26,7 +26,7 @@ Obsługuje funkcje anonimowe.
 
 ### `const` vs `let`
 
-```js
+```
 const var1: int;          // Error: Const value has to be initialized
 let var1: int;            // Error: Variable has to be nullable
 let var2: int = 2;        // this will work
@@ -38,229 +38,263 @@ var3 = 5;                 // Error: Cannot modify constant variable
 
 ### `nullable`
 
-```js
+```
 /*
  variables can be uninstantiated
  both var1 and var2 will be null
 */
-let var1?: int;
-let var2?: int = null;
+
+let var1? : int;
+let var2? : int = null;
 ```
 
 ### `nullable` - dozwolone operacje
 
-```js
-let var3?: int;
+```
+let var3? : int;
 
 if (var3 == null) {
-    const b: int = var3 * 10;   // Error: Unallowed operation for a nullable variable
+  const b: int = var3 * 10;   // Error: Unallowed operation for a nullable variable
 } else {
-    const a: int = var3 + 3;    // this will work
-    print("Var3 nie jest nullem");
+  const a: int = var3 + 3;    // this will work
+  print("Var3 nie jest nullem");
 }
 ```
 
 ### `if` `elif` `else`, `while`
 
-```js
+```
 let i: int = 0;
 
 while (i <= 100) {
-    if (i % 3 == 0 or i % 5 == 0) {
-        print("FizzBuzz");
-    }
+  if (i % 3 == 0 or i % 5 == 0) {
+    print("FizzBuzz");
+  }
 
-    elif (i % 3 == 0) {
-        print("Fizz");
-    }
+  elif(i % 3 == 0) {
+    print("Fizz");
+  }
 
-    elif (i % 5 == 0) print("Buzz");    // shortened syntax for if, elif, else
+  elif(i % 5 == 0) print("Buzz");    // shortened syntax for if, elif, else
 
-    else {
-        print(i);
-    }
-
-    i = i + 1;
+  else {
+      print(i);
+  }
+  
+  i = i + 1;
 }
 ```
 
 ### `instrukcje zagnieżdżone`
 
-```python
+```
 let i: int = 0;
 
 if (1 + 2 == 3) {
-    if (12 > 4) {
-        if (i == 0) i = i + 1;
-        else {
-            if (i != 1) i = 1;
-        }
+  if (12 > 4) {
+    if (i == 0) {
+      i = i + 1;
     }
-    elif (false) i = i - 1;
-} else {
+    else {
+      if (i != 1) {i = 1;}
+    }
+  }
+  elif (false) {
+    i = i - 1;
+  }
+  } else {
     while (true) {
-        while (i != 3) { i++; }
+      while (i != 3) {
+        return 2 > 3 + 1 != 10;
+      }
     }
 }
 ```
 
 ### automatyczna konwersja między `int` a `float`, konkatencja `str` i `int`
 
-```js
-let num: float = (2.25 + (2 * 3) / 6 - 4) % 3; // This will work
-const num1: int = 1 / 1 + 5 + 7 - 1.5; // Error: Explicit cast to float required
+```
+let num: float = (2.25 + (2 * 3) / 6 - 4) % 3;  // This will work
+const num1: int = 1 / 1 + 5 + 7 - 1.5;          // Error: Explicit cast to float required
 
-let a: str = "" + 3; // "3"
-let b: int = 3 + "3"; // Error: Cannot concatenate type `int` with `str`
+let a: str = "" + 3;                            // "3"
+let b: int = 3 + "3";                           // Error: Cannot concatenate type `int` with `str`
 ```
 
-### deklaracja funkcji, zakres `globalny` i `lokalny`, wywołanie funkcji
+### deklaracja funkcji, zakres `globalny` i `lokalny`, (wielokrotne) wywołanie funkcji
 
-```js
-let var1?: int;   // global scope
+```
+let var1? : int;   // global scope
 
-def func0(): void => {}
+def func(): void => {
+  return;
+}
+
+def func0(): void => {
+
+}
 
 def func1(arg1: int, arg2: int): int => {
-    const var1: str = "Hello";  // var1 is in a function scope so redeclaring variables should work
-    return var1 + var2 + 3;
+  const var1: str = "Hello";  // var1 is in a function scope so redeclaring variables should work
+  return var1 + var2 + 3;
 }
 
 def func2(arg1: int, arg2: int): func((arg3: int) => int) => {
-    return (arg3: int) => {
-        return arg1 + arg2 + arg3;
-    }
+  return (arg3: int): int => {
+    return arg1 + arg2 + arg3;
+  };
 }
 
 def outer(): func(() => void) => {
-    const inner = () => {}
-    return inner;
+  const inner: func(() => void) = (): void => {};
+  return inner;
 }
+
 
 const b: func(() => void) = func0;
 const result: int = func1(1, 2);
-const fn: func((arg3: int) => int) = fun2(1, 2);
+const fn: func((a: int) => int) = fun2(1, 2);
 const res: int = fn(3); // 6
+
 outer()();
+b();
 ```
 
-### funkcje anonimowe, zwracanie innych funkcji (currying)
+### funkcje anonimowe, zwracanie innych funkcji
 
-```js
+```
 // anonymous function returning another anonymous function
-const adder = (offset: int): func((x: int, y: int) => int) => {
+const adder: func((offset: int) => func((x: int, y: int) => int)) = (offset: int): func((x: int, y: int) => int) => {
   return (x: int, y: int): int => {
     return offset + x + y;
   };
 };
 
-const add_with_offset: func = adder(2); // outer function
+
+const add_with_offset: func() = adder(2); // outer function       # TODO
 const sum_with_offset: int = add_with_offset(4, 5); // inner function
 ```
 
 ### równoważny zapis dla fukcji anonimowych
 
-```js
+```
 // lambda: syntax without return
-const substract = (x: int, y: int): int => x - y;
+const substract: func((x: int, y: int) => int) = (x: int, y: int): int => x - y;
 
 // lambda: standard syntax
-const substract = (x: int, y: int): int => {
+const substract: func((x: int, y: int) => int) = (x: int, y: int): int => {
   return x - y;
 };
 
 // downside of using shortened syntax with currying
-const a = (x: int): func((y: int) => func((z: int) => int)) => (y: int): func((z: int) => int) => (z: int) => x + y + z;
+// this is a valid construction
+const a: int = (x: int): func((x: int) => func((y: int) => func((z: int) => int))) => (y: int): func((z: int) => int) => (z: int): int => x + y + z;
 
 // syntax can be mixed
-const b = (x: int) => {
-    return (y: int) => x + y;
-}
+const b: func((x: int) => func((y: int) => int)) = (x: int): func((y: int) => int) => {
+  return (y: int): int => x + y;
+};
 ```
 
 ### funkcje biblioteczne
 
-`print(arg)`  
-`str(arg)`
+`print(*args)`
 
 ---
 
 ## Gramatyka
 
 ```
-Program = ProgramStatement, { ProgramStatement } ;
+Program = { ProgramStatement } ;
 
 ProgramStatement = FuncDef | Statement ;
 
-FuncDef = ["def", Id], "(", Args ")", ":", ReturnType, "=>", FuncBody ;
+FuncDef = "def", Id, "(", Params ")", ":", ReturnType, "=>", FuncBody ;
 
-FuncBody = Body | ( Expression, [ ";" ] ) ;
+LambdaDef = "(", Params ")", ":", ReturnType, "=>", FuncBody ; 
 
-Args = [ Arg, { ",", Arg } ] ;
+FuncBody = Body | Expr ;
 
-Arg = Id, AssignOp, VarType ;
+Params = [ Param, { ",", Param } ] ;
+
+Param = Id, DeclareTypeOp, VarType ;
 
 Body = "{", { Statement }, "}" ;
 
-Statement = Conditional | Loop | StatementShort ;
+Statement = Conditional 
+        | Loop
+        | Declaration
+        | Return
+        | IdOperation
+        | Body ;
 
-StatementShort = Return | Assignment ;
+Loop = "while", "(", Expr, ")", Body ;
 
-Loop = "while", "(", Expression, ")", Body ;
+FuncCall = "(", Arguments, ")", { "(", Arguments, ")" } ;
 
-Conditional = IfStatement, { ElifStatement }, [ "else", CondBody ] ;
+Arguments = [ Expr, { ",", Expr } ] ;
 
-IfStatement = "if", "(", Expression, ")", CondBody ;
+Return = "return", [ Expr ], ";" ;
 
-ElifStatement = "elif", "(", Expression, ")", CondBody ;
+Conditional = "if", "(", Expr, ")", Statement, { ElifStatement }, [ "else", Statement ] ;
 
-CondBody = StatementShort | Body ;
+ElifStatement = "elif", "(", Expr, ")", Statement ;
 
-FuncCall = "(", Arguments, ")" ;
+Expr = NullCoalExpr, { "??" , NullCoalExpr } ;
 
-Arguments = [ Expression, { ",", Expression } ] ;
+NullCoalExpr = OrExpr, { "or", OrExpr } ;
 
-Return = "return", Expression, ";" ;
+OrExpr = AndExpr, { "and", AndExpr } ;
 
-Expression = SimpleExpression, [RelOp, SimpleExpression] ;
+AndExpr = EqExpr, { EqOp, EqExpr } ;
 
-SimpleExpression = Sign, AddTerm, { AddOp, Sign, AddTerm } ;
+EqExpr = CompFac, { CompOp, CompFac } ;
 
-AddTerm = MultTerm, { MultOp, MultTerm } ;
+CompFac = ["not"], AddFac ;
 
-MultTerm = Literal
-        | (Id, [ FuncCall ])
-        | "(", Expression, ")"
-        | FuncDef;
+AddFac = MultFac, { AddOp, MultFac } ;
+
+MultFac = Factor, { MultOp, Factor } ;
+
+Factor = ["-"], 
+          Literal
+        | Id, [ FuncCall ]
+        | "(", [ Expr ] , ")" ;
 
 Literal = Number | String | Boolean | Null ;
 
-Assignment = [ DeclareKeyword ], Id, [ DeclareTypeOp, VarType ], "=", Expression, ";" ;
+IdOperation = Id, ( Assignment | FuncCall ), ";" ;
+
+Assignment = "=", Expr ;
+
+Declaration = DeclareKeyword, Id, DeclareTypeOp, VarType, "=", Expr, ";" ;
 
 DeclareKeyword = "const" | "let" ;
 
 DeclareTypeOp = "?:" | ":" ;
 
-AddOp = "+" | "-" | "or" ;
+AddOp = "+" | "-" ;
 
-MultOp = "*" | "/" | "%" | "and" ;
+MultOp = "*" | "/" | "%" ;
 
-RelOp = "<" | "<=" | ">" | ">=" | "==" | "!=" ;
+EqOp = "==" | "!=" ;
 
-VarType = str"
+CompOp = "<" | "<=" | ">" | ">=" ;
+
+VarType = "str"
         | "int"
         | "float"
         | "bool"
         | FuncType ;
 
-FuncType = "func", "(", "(", Args, ")", "=>", ReturnType, ")" ;
+FuncType = "func", "(", "(", Params, ")", "=>", ReturnType, ")" ;
 
 ReturnType = VarType | "void" ;
 
 String = "\"", {all utf-8 chars}, "\""
        | "\'", {all utf-8 chars}, "\'" ;
 
-Number = Sign, Integer, [".", { Integer }]
+Number = Integer, [".", { Integer }]
 
 Integer = Digit, { Digit } ;
 
@@ -275,15 +309,11 @@ Letter = "a" .. "Z"
         | "_" ;
 
 Digit = "0" .. "9" ;
+```
 
-Sign = "-" | Empty ;
-
-Comment = "/", "/", {all utf-8 chars}, Newline ;
-
-MultilineComment = "/", "*", {all utf-8 chars except "*" | Newline}, "*", "/" ;
-
-Newline = "\n" ;
-Empty = "" ;
+```
+Comment = "/", "/", {all utf-8 chars}, "\n" ;
+MultilineComment = "/", "*", {all utf-8 chars except "*" | "\n"}, "*", "/" ;
 ```
 
 ---
@@ -303,24 +333,35 @@ Empty = "" ;
 - program nie powinien kończyć się nie obsłużonym wyjątkiem
 - wysokie pokrycie kodu testami
 
-
 ## Obsługa błędów
 
-- każdy moduł będzie posiadał swoją własną klasę wyjątków, która będzie dziedziczyła po klasie bazowej `Error(Exception)`.
+- każdy moduł będzie posiadał swoją własną klasę wyjątków, która będzie dziedziczyła po klasie
+  bazowej `Error(Exception)`.
 
 ## Opis testowania
 
-Do testowania zostanie wykorzystany moduł `unittest` z biblioteki standardowej oraz zewnętrzna paczka `coverage` do pomiaru pokrycia kodu testami.
+Do testowania zostanie wykorzystany moduł `unittest` z biblioteki standardowej oraz zewnętrzna paczka `coverage` do
+pomiaru pokrycia kodu testami.
 
 Przeprowadzone zostaną:
 
-- testy jednostkowe - testowanie każdej metody, sprawdzanie przypadków częstych, skrajnych, złośliwych
+- testy jednostkowe - sprawdzanie przypadków częstych, skrajnych, złośliwych
 - testy integracyjne sprawdzające wspólne działanie modułów (m.in Lexer + Parser)
 
 ## Sposób uruchomienia
 
-Do uruchomienia programu wymagany jest Python w wersji minimum 3.8
+Do uruchomienia programu wymagany jest Python w wersji minimum 3.10 (ze względu na użycie wyrażeń match case).
 
 ```shell
 python cli.py -f <path_to_file>
+```
+
+Uruchomienie testów jednostkowych
+```
+coverage run unittest -m discover
+```
+
+Raport z uruchomienia testów jednostkowych z informacją o m.in pokryciu kodu testami
+```
+coverage report -m
 ```
