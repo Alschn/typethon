@@ -125,8 +125,8 @@ class EqualityExpression(BinaryExpression):
 
 class CompFactor(Expression):
 
-    def __init__(self, factor: Expression, negation: bool):
-        self.factor = factor
+    def __init__(self, neg_factor: Expression, negation: bool):
+        self.factor = neg_factor
         self.negation = negation
 
 
@@ -138,10 +138,17 @@ class MultiplicativeExpression(BinaryExpression):
     pass
 
 
-class Factor(Expression):
-    def __init__(self, value: Expression, minus: bool):
-        self.value = value
+class NegFactor(Expression):
+
+    def __init__(self, factor: Expression, minus: bool):
+        self.factor = factor
         self.minus = minus
+
+
+class Factor(Expression):
+
+    def __init__(self, value: Expression):
+        self.value = value
 
 
 class Variable(Expression):

@@ -254,10 +254,11 @@ CompFac = ["not"], AddFac ;
 
 AddFac = MultFac, { AddOp, MultFac } ;
 
-MultFac = Factor, { MultOp, Factor } ;
+MultFac = NegFac, { MultOp, NegFac } ;
 
-Factor = ["-"], 
-          Literal
+NegFac = ["-"], Factor ;
+
+Factor =  Literal
         | Id, [ FuncCall ]
         | "(", [ Expr ] , ")" ;
 
@@ -267,7 +268,7 @@ IdOperation = Id, ( Assignment | FuncCall ), ";" ;
 
 Assignment = "=", Expr ;
 
-Declaration = DeclareKeyword, Id, DeclareTypeOp, VarType, "=", Expr, ";" ;
+Declaration = DeclareKeyword, Id, DeclareTypeOp, VarType, ["=", Expr] , ";" ;
 
 DeclareKeyword = "const" | "let" ;
 
