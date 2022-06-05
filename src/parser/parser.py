@@ -282,11 +282,7 @@ class Parser:
 
         # variables can be uninitialized only if they are declared with `let`
         # and described as nullable with `?:`
-        if not mutable:
-            raise UninitializedConstError(current_token=self.lexer.token)
-
-        if not nullable:
-            raise NotNullableError(assign_token.position)
+        # mutability/nullability is handled by the interpreter, not parser
 
         self.expect_and_consume(TokenType.SEMI)
         return DeclarationStatement(variable, None)
