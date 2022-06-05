@@ -81,7 +81,7 @@ class Parser:
 
         return FunctionDefinition(
             name=id_token.value,
-            arguments=parameters,
+            parameters=parameters,
             return_type=return_type,
             body=func_body
         )
@@ -147,7 +147,7 @@ class Parser:
         nullable = assign_token == TokenType.TYPE_ASSIGN_NULLABLE
 
         return Parameter(
-            symbol=id_token.value, typ=param_type,
+            name=id_token.value, typ=param_type,
             nullable=nullable, mutable=False  # parameters immutable by default, depends on variables immutability
         )
 
@@ -199,14 +199,16 @@ class Parser:
         if not self.check_and_consume(TokenType.LCURLY):
             return None
 
-        if self.check_and_consume(TokenType.RCURLY):
-            return EmptyStatement()
-
         statements = []
         while statement := self.try_parse_statement():
             statements.append(statement)
 
         self.expect_and_consume(TokenType.RCURLY)
+
+        # if there were no statements and body was properly closed,
+        # then return empty statement
+        if not statements:
+            return EmptyStatement()
 
         return CompoundStatement(statements=statements)
 
