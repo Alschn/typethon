@@ -32,16 +32,22 @@ class String(Type):
 
 
 class Null(Type):
-    pass
+
+    def __eq__(self, other):
+        return type(self) == type(other) or type(other) == Void
 
 
 class Void(Type):
-    pass
+    """Void can only appear in function's signature.
+    It is considered the same as Null type when returned from function."""
+
+    def __eq__(self, other):
+        return type(self) == type(other) or type(other) == Null
 
 
 class Func(Type):
 
-    def __init__(self, arguments_types, return_type: Type):
+    def __init__(self, arguments_types: list, return_type: Type):
         self.input_types = arguments_types
         self.output_type = return_type
 
@@ -49,7 +55,9 @@ class Func(Type):
         if not hasattr(other, 'input_types') or not hasattr(other, 'output_type'):
             return False
 
-        return self.input_types == other.input_types and self.output_type == other.output_type
+        return_match = self.output_type == other.output_type
+        parameters_match = all(s.type == o.type for s, o in zip(self.input_types, other.input_types))
+        return return_match and parameters_match
 
 
 TYPES_MAPPING = {

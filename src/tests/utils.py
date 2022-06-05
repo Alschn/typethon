@@ -1,3 +1,7 @@
+import unittest
+from io import StringIO
+from unittest.mock import patch
+
 from src.interpreter.interpreter import Interpreter
 from src.lexer.lexer import Lexer
 from src.lexer.lexer import LexerSkippingComments
@@ -22,3 +26,6 @@ def setup_interpreter(text: str) -> Interpreter:
     parser = setup_parser(text=text)
     interpreter = Interpreter(parser=parser)
     return interpreter
+
+
+mock_stdout = unittest.mock.patch('sys.stdout', new_callable=StringIO)

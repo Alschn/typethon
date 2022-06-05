@@ -22,6 +22,29 @@ mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimo
 - funkcja może zwracać inną funkcję
 - możliwość dodawania komentarzy jedno i wieloliniowych
 
+## Zdefiniowane zachowania:
+
+### Operatory:
+
+#### Operator `+`
+
+#### Operator `-`
+
+#### Operator `*`
+
+#### Operator `/`
+
+#### Operator `%`
+
+#### Operator `not`
+
+#### Operatory `and` i `or`
+
+#### Operatory `>`, `>=`, `<`, `<=`
+
+#### Operatory `==`, `!=`
+
+
 ## Przykłady
 
 ### `const` vs `let`
@@ -198,7 +221,12 @@ const b: func((x: int) => func((y: int) => int)) = (x: int): func((y: int) => in
 
 ### funkcje biblioteczne
 
-`print(*args)`
+`print(*args)` - przyjmuje wiele argumentów o dowolnym typach
+`String()`
+`Integer()`
+`Float()`
+`Boolean()`
+``
 
 ---
 
