@@ -1,9 +1,11 @@
 from typing import Any
 
-from src.parser.objects.objects import FunctionDefinition
+from src.parser.objects.objects import FunctionDefinition, Variable
 
 
 class Scope:
+    symbol_table: dict[str, Variable]
+
     def __init__(self, parent_scope=None):
         self.parent_scope = parent_scope
         self.symbol_table = {}
@@ -39,6 +41,8 @@ class Scope:
 class GlobalScope(Scope):
     """Global scope is a top level scope, which apart from inheriting default behaviour
     has its own function table for function definitions."""
+
+    fun_table: dict[str, FunctionDefinition]
 
     def __init__(self, parent_scope: Scope = None):
         super().__init__(parent_scope)
