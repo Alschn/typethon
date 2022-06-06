@@ -2,7 +2,7 @@ from typing import Any
 
 from src.errors.interpreter import DivisionByZeroError, UnexpectedTypeError, UndefinedNameError, NotCallableError, \
     ArgumentsError, RecursionLimitError, ReturnException, NotNullableError, UninitializedConstError, \
-    ConstRedeclarationError, ReturnTypeMismatchError, TypeMismatchError, ConstAssignmentError
+    ConstRedeclarationError, ReturnTypeMismatchError, TypeMismatchError, ConstAssignmentError, ReturnOutSideOfFunction
 from src.interpreter.environment import Environment
 from src.interpreter.visitor import Visitor
 from src.parser import Parser
@@ -44,7 +44,11 @@ class Interpreter(Visitor):
 
         self.env = Environment()
         program = self.parser.parse_program()
-        return self.visit(program)
+        try:
+            self.visit(program)
+
+        except ReturnException:
+            raise ReturnOutSideOfFunction()
 
     @property
     def binary_operations(self):
@@ -85,7 +89,7 @@ class Interpreter(Visitor):
             if cond.type != Bool() and cond.type != Null():
                 raise UnexpectedTypeError(f'Expected condition to be type Bool or Null. Got {cond.type} instead.')
 
-            if cond.value is False:
+            if not cond.value:
                 break
 
             self.visit(while_loop_statement.body)
@@ -250,12 +254,14 @@ class Interpreter(Visitor):
                     raise NotCallableError('returned in function', typ=return_value.type)
 
     def visit_AssignmentStatement(self, assignment_statement: AssignmentStatement):
-        """"""
+        """Visits AssignmentStatement"""
 
         var_name = assignment_statement.name
-        # TODO nullability, const/let
-        if not (var := self.env.get_variable(var_name)):  # TODO assigning function
-            raise Exception('Could not find variable to assign to.')
+        if not (var := self.env.get_variable(var_name)) or not (func := self.env.get_fun_def(var_name)):
+            raise UndefinedNameError(var_name)
+
+        if not var and func:    # todoo in future - resolve potential race condition or remove
+            raise UnexpectedTypeError("Cannot assign value assign to function")
 
         # if variable is const, then there is no way to reassign value to it
         if not var.mutable:
@@ -393,7 +399,7 @@ class Interpreter(Visitor):
         if not (var := self.env.get_variable(identifier.name)):
             raise UndefinedNameError(identifier.name)
 
-        return var.value
+        return var
 
     def visit_Parameter(self, parameter: Parameter):
         """Visits Parameter and returns it."""
@@ -408,7 +414,10 @@ class Interpreter(Visitor):
 
         values = []
         for param in builtin.parameters_list:
-            values.append(self.env.get_variable(param.name).value)
+            var = self.env.get_variable(param.name).value
+            printable = var.value if hasattr(var, 'value') else var
+            values.append(printable)
+
         print(*values)
 
         builtin.parameter_list = None
@@ -488,7 +497,13 @@ class Interpreter(Visitor):
         """Calculates difference of two sides. Allowed only for integers and floats."""
 
         match left_side.type:
-            case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
+            case Integer() if right_side.type == Integer():
+                return Literal(typ=Integer(), value=left_side.value - right_side.value)
+
+            case Integer() if right_side.type == Float():
+                return Literal(typ=Float(), value=left_side.value - right_side.value)
+
+            case Float() if right_side.type == Integer() or right_side.type == Float():
                 return Literal(typ=Float(), value=left_side.value - right_side.value)
 
             case _:
@@ -501,7 +516,10 @@ class Interpreter(Visitor):
             case Integer() if right_side.type == Integer():
                 return Literal(typ=Integer(), value=left_side.value * right_side.value)
 
-            case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
+            case Integer() if right_side.type == Float():
+                return Literal(typ=Float(), value=left_side.value * right_side.value)
+
+            case Float() if right_side.type == Integer() or right_side.type == Float():
                 return Literal(typ=Float(), value=left_side.value * right_side.value)
 
             case _:
@@ -517,7 +535,10 @@ class Interpreter(Visitor):
             case Integer() if right_side.type == Integer():
                 return Literal(typ=Integer(), value=left_side.value / right_side.value)
 
-            case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
+            case Integer() if right_side.type == Float():
+                return Literal(typ=Float(), value=left_side.value / right_side.value)
+
+            case Float() if right_side.type == Integer() or right_side.type == Float():
                 return Literal(typ=Float(), value=left_side.value / right_side.value)
 
             case _:
@@ -533,7 +554,10 @@ class Interpreter(Visitor):
             case Integer() if right_side.type == Integer():
                 return Literal(typ=Integer(), value=left_side.value % right_side.value)
 
-            case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
+            case Integer() if right_side.type == Float():
+                return Literal(typ=Float(), value=left_side.value % right_side.value)
+
+            case Float() if right_side.type == Integer() or right_side.type == Float():
                 return Literal(typ=Float(), value=left_side.value % right_side.value)
 
             case _:

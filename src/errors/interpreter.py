@@ -116,6 +116,12 @@ class TypeMismatchError(InterpreterError):
         return f"Variable {self.name} was declared with type {self.expected} but received type {self.actual}."
 
 
+class ReturnOutSideOfFunction(InterpreterError):
+
+    def __str__(self) -> str:
+        return f"Return statement is not allowed outside of a function."
+
+
 class ReturnException(Exception):
     def __init__(self, value: Any):
         self.value_to_return = value
