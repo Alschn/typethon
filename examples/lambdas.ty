@@ -1,9 +1,12 @@
-// lambda: standard syntax
-const substract: func((x: int, y: int) => int) = (x: int, y: int): int => {
-  return x - y;
-};
+const add: func((x: int, y: int) => int) = (x: int, y: int): int => x + y;
+print(add(1, 2));
 
-// shortened lambda syntax - without return
-const substract: func((x: int, y: int) => int) = (x: int, y: int): int => x - y;
+// functions can be passed into another function as an argument
+// and called inside of them
 
-const a: func((x: int) => func((y: int) => int)) = (x: int): func((y: int) => int) => (y: int): int => x * y;
+def fun(a: int, callback: func((x: int, y: int) => int)): int => {
+    return a + callback(a, a);
+}
+
+const triple: int = fun(15, add);
+print(triple);

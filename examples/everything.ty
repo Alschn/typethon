@@ -9,24 +9,30 @@
 const a: int = 1;
 const b: float = 1.5;
 const c: str = "Hello world!";
-const d: bool = false
+let d: bool = false;
+let e: int = 0;
+let f: float = 0;
+let g: str = "";
 let nullable1?: int;
 let nullable2?: int = 5;
 
-a = a + 3 % 1;
-b = (b - 1.23) / 0.75;
-c = c + "!!!";
+e = a + 3 % 1;
+f = (b - 1.23) / 0.75;
+g = c + "!!!";
 d = not false or true and 1 > 3;
+
 
 let not_nullable: int = nullable2 ?? 12345;
 if (nullable1 == null) print("Nullable1 is a null :(");
 
-while (true) {
-    if (nullable1 == null) {
+let condition: bool = true;
 
+while (condition) {
+    if (nullable1 == null) {
+        condition = false;
     }
     elif (a > 15 or b <= 13.37) {
-        print(str(a));
+        print(String(a));
     }
     else {}
 }

@@ -28,12 +28,6 @@ from src.parser.types import (
 MAX_RECURSION_DEPTH = 60
 
 
-# TODO:
-# - interpreter unit tests
-# - fix parser tests
-# - documentation
-
-
 # noinspection PyMethodMayBeStatic
 class Interpreter(Visitor):
 
@@ -754,7 +748,7 @@ class Interpreter(Visitor):
 
         elif left_side.type != right_side.type:
             raise UnexpectedTypeError(
-                f"Cannot check if type {left_side.type} equals type {right_side.type}")
+                f"Cannot check if type {left_side.type} does not equal type {right_side.type}")
 
         return Literal(typ=Bool(), value=left_side.value != right_side.value)
 
