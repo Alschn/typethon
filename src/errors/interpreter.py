@@ -47,6 +47,18 @@ class ArgumentsError(InterpreterError):
         return f"{self.fn_name} takes {self.expected} arguments but {self.actual} were given."
 
 
+class ArgumentTypeError(InterpreterError):
+
+    def __init__(self, fn_name: str, name: str, expected, actual):
+        self.fn_name = fn_name
+        self.name = name
+        self.expected = expected
+        self.actual = actual
+
+    def __str__(self) -> str:
+        return f"Parameter {self.name} of function {self.fn_name} should be type {self.expected}. Got type {self.actual} instead."
+
+
 class RecursionLimitError(InterpreterError):
 
     def __str__(self) -> str:
@@ -86,7 +98,7 @@ class ConstAssignmentError(InterpreterError):
         self.name = name
 
     def __str__(self) -> str:
-        return f"Cannot assign to {self.name} because it is a constant"
+        return f"Cannot assign to {self.name} because it is a constant."
 
 
 class UnexpectedTypeError(InterpreterError):
@@ -116,7 +128,13 @@ class TypeMismatchError(InterpreterError):
         return f"Variable {self.name} was declared with type {self.expected} but received type {self.actual}."
 
 
-class ReturnOutSideOfFunction(InterpreterError):
+class AssignmentTypeMismatchError(TypeMismatchError):
+
+    def __str__(self) -> str:
+        return f"Cannot assign type {self.actual} to variable {self.name} type {self.expected}."
+
+
+class ReturnOutsideOfFunctionError(InterpreterError):
 
     def __str__(self) -> str:
         return f"Return statement is not allowed outside of a function."

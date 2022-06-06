@@ -122,3 +122,20 @@ OPERATORS = {
 
     TokenType.NULL_COALESCE: OtherOperator.NULL_COALESCE
 }
+
+
+def value_to_string(value: Value) -> str:
+    """Maps python types to Typethon types representation."""
+
+    match value:
+        case None:
+            return "null"
+
+        case True:
+            return "true"
+
+        case False:
+            return "false"
+
+        case _:
+            return str(value)

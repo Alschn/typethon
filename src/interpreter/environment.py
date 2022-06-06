@@ -82,7 +82,7 @@ class Environment:
 
         self.global_scope.add_fun_def(fun_def)
 
-    def get_fun_def(self, fun: str) -> None:
+    def get_fun_def(self, fun: str) -> FunctionDefinition | None:
         """Tries to get function definition from the global scope."""
 
         return self.global_scope.get_fun_def(fun)

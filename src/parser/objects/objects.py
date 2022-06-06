@@ -75,7 +75,6 @@ class FunctionDefinition(Statement):
         if self._builtin:
             self.body.parameters_list = parameters
 
-        # chr(97) == 'a'
         for i, _ in enumerate(arguments):
             parameters.append(Identifier(chr(97 + i)))
 

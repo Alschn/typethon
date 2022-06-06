@@ -11,7 +11,8 @@ from src.parser.objects.objects import (
     AdditiveExpression, MultiplicativeExpression, Identifier, AssignmentStatement,
     NullCoalesceExpression, EqualityExpression, WhileLoopStatement, EmptyStatement,
     ReturnStatement, CompoundStatement, LambdaExpression,
-    InlineReturnStatement, Parameter, BinaryExpression, IfStatement, ElseStatement, FunctionDefinition, ElifStatement
+    InlineReturnStatement, Parameter, BinaryExpression, IfStatement, ElseStatement, FunctionDefinition, ElifStatement,
+    NegFactor
 )
 from src.parser.objects.program import Program
 from src.parser.types import (
@@ -29,14 +30,16 @@ def parse(text: str) -> Program:
 class DeclarationTests(unittest.TestCase):
 
     def test_uninitialized_const_declaration(self):
+        # parser will parse it,
+        # but it is a semantic error which will be detected by interpreter
         text = "const a: int;"
-        with self.assertRaises(UninitializedConstError):
-            parse(text)
+        program = parse(text)
 
     def test_declaration_missing_nullable_type_assign(self):
+        # parser will parse it,
+        # but it is a semantic error which will be detected by interpreter
         text = "let a: int;"
-        with self.assertRaises(NotNullableError):
-            parse(text)
+        program = parse(text)
 
     def test_nullable_declaration_without_initializing(self):
         text = "let a?: int;"
@@ -61,10 +64,9 @@ class DeclarationTests(unittest.TestCase):
                 DeclarationStatement(
                     left_value=Variable(name='a', mutable=True, nullable=True, type=String()),
                     right_value=CompFactor(
-                        factor=Factor(
-                            value=Literal(
-                                value="Hello world!",
-                                type=String()
+                        factor=NegFactor(
+                            factor=Factor(
+                                value=Literal(value="Hello world!", type=String())
                             ),
                             minus=False,
                         ),
@@ -85,8 +87,10 @@ class DeclarationTests(unittest.TestCase):
                 DeclarationStatement(
                     left_value=Variable(name='a', type=Integer(), nullable=False, mutable=False),
                     right_value=CompFactor(
-                        factor=Factor(
-                            value=FunctionCall(name='f', arguments=[[]]),
+                        factor=NegFactor(
+                            factor=Factor(
+                                value=FunctionCall(name='f', arguments=[[]])
+                            ),
                             minus=False
                         ),
                         negation=False
@@ -101,6 +105,7 @@ class DeclarationTests(unittest.TestCase):
     def test_declaration_with_complex_expression(self):
         text = "const a: float = -1 * (a * 3) / 9 + f();"
         program = parse(text)
+
         match program.objects:
             case [
                 DeclarationStatement(
@@ -109,39 +114,50 @@ class DeclarationTests(unittest.TestCase):
                         factor=AdditiveExpression(
                             left_value=MultiplicativeExpression(
                                 left_value=MultiplicativeExpression(
-                                    left_value=Factor(
-                                        value=Literal(value=1, type=Integer()),
+                                    left_value=NegFactor(
+                                        factor=Factor(
+                                            value=Literal(value=1, type=Integer()),
+                                        ),
                                         minus=True
                                     ),
                                     operator=ArithmeticOperator.MUL,
-                                    right_value=Factor(
-                                        value=CompFactor(
-                                            factor=MultiplicativeExpression(
-                                                left_value=Factor(
-                                                    value=Identifier(name='a'),
-                                                    minus=False
+                                    right_value=NegFactor(
+                                        factor=Factor(
+                                            value=CompFactor(
+                                                factor=MultiplicativeExpression(
+                                                    left_value=NegFactor(
+                                                        factor=Factor(
+                                                            value=Identifier(name='a'),
+                                                        ),
+                                                        minus=False
+                                                    ),
+                                                    operator=ArithmeticOperator.MUL,
+                                                    right_value=NegFactor(
+                                                        factor=Factor(
+                                                            value=Literal(value=3, type=Integer())
+                                                        ),
+                                                        minus=False
+                                                    )
                                                 ),
-                                                operator=ArithmeticOperator.MUL,
-                                                right_value=Factor(
-                                                    value=Literal(value=3, type=Integer()),
-                                                    minus=False
-                                                )
+                                                negation=False
                                             ),
-                                            negation=False
                                         ),
                                         minus=False
                                     )
                                 ),
                                 operator=ArithmeticOperator.DIV,
-                                right_value=Factor(
-                                    value=Literal(value=9, type=Integer()),
+                                right_value=NegFactor(
+                                    factor=Factor(
+                                        value=Literal(value=9, type=Integer()),
+                                    ),
                                     minus=False
                                 )
                             ),
                             operator=ArithmeticOperator.PLUS,
-                            right_value=Factor(
-                                value=FunctionCall(name='f', arguments=[[]]),
-                                minus=False
+                            right_value=NegFactor(
+                                factor=Factor(
+                                    value=FunctionCall(name='f', arguments=[[]]),
+                                ), minus=False
                             )
                         ),
                         negation=False
@@ -162,10 +178,12 @@ class AssignmentTests(unittest.TestCase):
         match program.objects:
             case [
                 AssignmentStatement(
-                    symbol='a',
+                    name='a',
                     right_value=CompFactor(
-                        factor=Factor(
-                            value=Literal(value=1, type=Integer()),
+                        factor=NegFactor(
+                            factor=Factor(
+                                value=Literal(value=1, type=Integer()),
+                            ),
                             minus=False
                         ),
                         negation=False
@@ -183,7 +201,7 @@ class AssignmentTests(unittest.TestCase):
         match program.objects:
             case [
                 AssignmentStatement(
-                    symbol='a',
+                    name='a',
                     right_value=CompFactor(
                         factor=AdditiveExpression(
                             left_value=Factor(
@@ -1635,11 +1653,14 @@ class LambdaTests(unittest.TestCase):
                 AssignmentStatement(
                     symbol='a',
                     right_value=CompFactor(
-                        factor=Factor(
-                            value=LambdaExpression(
-                                arguments=[],
-                                body=EmptyStatement(),
-                                return_type=Void()
+                        factor=NegFactor(
+                            factor=Factor(
+                                value=LambdaExpression(
+                                    arguments=[],
+                                    body=EmptyStatement(),
+                                    return_type=Void()
+                                ),
+
                             ),
                             minus=False
                         ),

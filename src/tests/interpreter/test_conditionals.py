@@ -82,7 +82,7 @@ class InterpreterConditionalsTests(unittest.TestCase):
         text = """
         if (true) {
             print("xd");
-        } else () {
+        } else {
             while (true) {}
         }
         """

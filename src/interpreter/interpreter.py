@@ -1,11 +1,17 @@
 from typing import Any
 
-from src.errors.interpreter import DivisionByZeroError, UnexpectedTypeError, UndefinedNameError, NotCallableError, \
-    ArgumentsError, RecursionLimitError, ReturnException, NotNullableError, UninitializedConstError, \
-    ConstRedeclarationError, ReturnTypeMismatchError, TypeMismatchError, ConstAssignmentError, ReturnOutSideOfFunction
+from src.errors.interpreter import (
+    DivisionByZeroError, UnexpectedTypeError, UndefinedNameError, NotCallableError,
+    ArgumentsError, RecursionLimitError, ReturnException, NotNullableError,
+    UninitializedConstError,
+    ConstRedeclarationError, ReturnTypeMismatchError, TypeMismatchError,
+    ConstAssignmentError,
+    AssignmentTypeMismatchError, ReturnOutsideOfFunctionError, ArgumentTypeError
+)
 from src.interpreter.environment import Environment
 from src.interpreter.visitor import Visitor
 from src.parser import Parser
+from src.parser.objects import builtins
 from src.parser.objects.objects import (
     FunctionDefinition, ReturnStatement, FunctionCall, CompFactor, NegFactor,
     Factor, Literal, Identifier, Parameter, WhileLoopStatement, BinaryExpression, IfStatement, InlineReturnStatement,
@@ -16,19 +22,16 @@ from src.parser.objects.program import Program
 from src.parser.types import (
     Integer, Float, Null, LogicOperator, ArithmeticOperator, ComparisonOperator,
     OtherOperator,
-    Bool, String, Void, Type
+    Bool, String, Void, Type, value_to_string
 )
 
-MAX_RECURSION_DEPTH = 100
+MAX_RECURSION_DEPTH = 60
 
 
 # TODO:
-# - type checking (argument types)
-# - overwriting variables in higher scope (from inside while, function etc.)
-# - builtins (bool, string, float, integer)
-# - documentation
-# - fix parser tests
 # - interpreter unit tests
+# - fix parser tests
+# - documentation
 
 
 # noinspection PyMethodMayBeStatic
@@ -48,7 +51,7 @@ class Interpreter(Visitor):
             self.visit(program)
 
         except ReturnException:
-            raise ReturnOutSideOfFunction()
+            raise ReturnOutsideOfFunctionError()
 
     @property
     def binary_operations(self):
@@ -85,7 +88,7 @@ class Interpreter(Visitor):
     def visit_WhileLoopStatement(self, while_loop_statement: WhileLoopStatement):
         """While condition is true, keeps visiting while loop's statement."""
 
-        while cond := self.visit(while_loop_statement.condition):
+        while cond := self.unpack_variable(self.visit(while_loop_statement.condition)):
             if cond.type != Bool() and cond.type != Null():
                 raise UnexpectedTypeError(f'Expected condition to be type Bool or Null. Got {cond.type} instead.')
 
@@ -99,7 +102,7 @@ class Interpreter(Visitor):
         statement. Then visits all elifs the same way. Finally visits else statement if both if and all elif
         condition are false. Methods `visit_ElifStatement` and `visit_ElseStatement` are redundant."""
 
-        if cond := self.visit(if_statement.condition):
+        if cond := self.unpack_variable(self.visit(if_statement.condition)):
             # condition has to be bool, otherwise it is a semantic error
             if cond.type != Bool() and cond.type != Null():
                 raise UnexpectedTypeError(f'Expected condition to be type Bool or Null. Got {cond.type} instead.')
@@ -172,8 +175,7 @@ class Interpreter(Visitor):
         if not (params := func_def.parameters):
             params = func_def.build_generic_parameters(arguments)
 
-        if len(arguments) != len(params):
-            raise ArgumentsError(fn_name, len(params), len(arguments))
+        self.type_check_arguments(fn_name, arguments, params)
 
         if self.env.fun_call_nesting >= MAX_RECURSION_DEPTH:
             raise RecursionLimitError()
@@ -189,10 +191,26 @@ class Interpreter(Visitor):
             # and call it if there are more arguments on stack
             if new_return_value := self.chained_func_call_helper(return_value, index, func_call):
                 return_value = new_return_value
+                return_type = new_return_value.type
 
         self.env.destroy_fun_scope()
 
         return self.type_check_return_type(fn_name, return_value, return_type)
+
+    def type_check_arguments(self, fn_name: str, arguments: list, params: list):
+        """Checks if length of arguments if right and if they are of valid type."""
+
+        if len(arguments) != len(params):
+            raise ArgumentsError(fn_name, len(params), len(arguments))
+
+        for arg, param in zip(arguments, params):
+            # generic parameter - any type works
+            if isinstance(param, Identifier):
+                continue
+
+            # invalid type
+            if arg.type != param.type:  # todoo casting float to int??
+                raise ArgumentTypeError(fn_name, param.name, param.type, arg.type)
 
     def type_check_return_type(self, fn_name: str, return_value: Any, return_type: Type):
         """Raises error if return_value is None but return type was not Void/Null,
@@ -257,11 +275,8 @@ class Interpreter(Visitor):
         """Visits AssignmentStatement"""
 
         var_name = assignment_statement.name
-        if not (var := self.env.get_variable(var_name)) or not (func := self.env.get_fun_def(var_name)):
+        if not (var := self.env.get_variable(var_name)):
             raise UndefinedNameError(var_name)
-
-        if not var and func:    # todoo in future - resolve potential race condition or remove
-            raise UnexpectedTypeError("Cannot assign value assign to function")
 
         # if variable is const, then there is no way to reassign value to it
         if not var.mutable:
@@ -272,6 +287,15 @@ class Interpreter(Visitor):
         # if variable not is nullable and rvalue is null
         if not var.nullable and rvalue.type == Null():
             raise NotNullableError(var_name)
+
+        # cast integer to float, keeping variable's value type float
+        if var.type == Float() and rvalue.type == Integer():
+            var.value = Literal(typ=Float(), value=rvalue.value)
+            self.env.set_variable(assignment_statement.name, var)
+            return
+
+        if var.type != rvalue.type:
+            raise AssignmentTypeMismatchError(var.name, var.type, rvalue.type)
 
         var.value = rvalue
         self.env.set_variable(assignment_statement.name, var)
@@ -307,12 +331,18 @@ class Interpreter(Visitor):
                     raise NotNullableError(variable.name)
 
                 # if there already is an immutable variable with the same name, cannot reassign value
-                case _ if not variable.mutable and self.env.get_variable(variable.name):
+                case _ if (var := self.env.get_variable(variable.name)) and not var.mutable:
                     raise ConstRedeclarationError(variable.name)
 
                 case _:
-                    # types match, or conversion from integer to float
-                    if variable.type == value.type or (variable.type == Float() and value.type == Integer()):
+                    # convert integer to float and keep float type
+                    if variable.type == Float() and value.type == Integer():
+                        variable.value = Literal(typ=Float(), value=value.value)
+                        self.env.set_variable(variable.name, variable)
+                        return
+
+                    # types match or variable nullable and right side is null
+                    if variable.type == value.type or (variable.nullable and value.type == Null()):
                         variable.value = value
                         self.env.set_variable(variable.name, variable)
                         return
@@ -409,37 +439,89 @@ class Interpreter(Visitor):
         """Visits Variable and returns it."""
         return variable
 
-    def visit_Print(self, builtin):
+    def visit_Print(self, builtin: builtins.Print):
         """Visits builtin `print` function which prints any number of arguments."""
 
         values = []
         for param in builtin.parameters_list:
-            var = self.env.get_variable(param.name).value
-            printable = var.value if hasattr(var, 'value') else var
-            values.append(printable)
+            var = self.env.get_variable(param.name)
+            printable = self.unpack_variable(var)
+
+            if str(printable.type) == "Func":
+                raise UnexpectedTypeError(f"Function print does not accept argument type {printable.type}")
+
+            values.append(value_to_string(printable.value))
 
         print(*values)
 
         builtin.parameter_list = None
 
-    def visit_String(self, builtin):
+    def visit_String(self, builtin: builtins.String) -> Literal:
         """Visits builtin `String` function which casts an argument to string type."""
-        # TODO
 
-    def visit_Boolean(self, builtin):
+        param = builtin.parameters_list[0]
+        var = self.unpack_variable(self.env.get_variable(param.name))
+
+        if str(var.type) == "Func":
+            raise UnexpectedTypeError(f"Function print does not accept argument type {var.type}")
+
+        return Literal(typ=String(), value=value_to_string(var.value))
+
+    def visit_Boolean(self, builtin: builtins.Boolean) -> Literal:
         """Visits builtin `Boolean` function which casts an argument to bool type."""
-        # TODO
 
-    def visit_Float(self, builtin):
+        param = builtin.parameters_list[0]
+        var = self.unpack_variable(self.env.get_variable(param.name))
+
+        match var.type:
+            case Bool() | Null():
+                return Literal(typ=Bool(), value=bool(var.value))
+
+            case _:
+                raise UnexpectedTypeError(
+                    f'Function Integer expected its argument to be type Bool/Null. Got type {var.type}')
+
+    def visit_Float(self, builtin: builtins.Float) -> Literal:
         """Visits builtin `Float` function which casts an argument to float type."""
-        # TODO
 
-    def visit_Integer(self, builtin):
+        param = builtin.parameters_list[0]
+        var = self.unpack_variable(self.env.get_variable(param.name))
+
+        match var.type:
+            case Integer() | Float():
+                return Literal(typ=Float(), value=float(var.value))
+
+            case _:
+                raise UnexpectedTypeError(
+                    f'Function Integer expected its argument to be type Integer/Float. Got type {var.type}')
+
+    def visit_Integer(self, builtin: builtins.Integer) -> Literal:
         """Visits builtin `Integer` function which casts an argument to string type."""
-        # TODO
+
+        param = builtin.parameters_list[0]
+        var = self.unpack_variable(self.env.get_variable(param.name))
+
+        match var.type:
+            case Integer() | Float():
+                return Literal(typ=Integer(), value=int(var.value))
+
+            case _:
+                raise UnexpectedTypeError(
+                    f'Function Integer expected its argument to be type Integer/Float. Got type {var.type}')
+
+    def unpack_variable(self, potential_variable: Any):
+        """If provided value is an instance of Variable, then return its value.
+        Otherwise just return the provided value."""
+
+        if isinstance(potential_variable, Variable):
+            return potential_variable.value
+
+        return potential_variable
 
     def unary_minus(self, factor):
         """Negates an integer/float. Not allowed for other types."""
+
+        factor = self.unpack_variable(factor)
 
         match factor:
             case Literal(type=Integer()) | Literal(type=Float()):
@@ -447,20 +529,24 @@ class Interpreter(Visitor):
                 return factor
 
             case _:
-                raise Exception('Unsupported operation for operator `-`.')
+                raise UnexpectedTypeError(f"Operator `-` expected type Integer/Float. Got {factor.type} instead.")
 
     def logic_not(self, factor):
         """Does logic negation. Allowed only for booleans."""
 
+        factor = self.unpack_variable(factor)
+
         if factor.type != Bool():
-            raise UnexpectedTypeError(f"Expected type Bool. Got {factor.type} instead.")
+            raise UnexpectedTypeError(f"Operator `not` expected type Bool. Got {factor.type} instead.")
 
         return Literal(typ=Bool(), value=not factor.value)
 
     def logic_or(self, left_side: Any, right_side: Any):
         """Does logic alternative. Allowed only for booleans."""
 
-        if left_side.type != Bool() and right_side.type != Bool():
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
+        if left_side.type != Bool() or right_side.type != Bool():
             raise UnexpectedTypeError(f"Expected types Bool Bool. Got {left_side.type} {right_side.type} instead.")
 
         return Literal(typ=Bool(), value=left_side.value or right_side.value)
@@ -468,7 +554,9 @@ class Interpreter(Visitor):
     def logic_and(self, left_side: Any, right_side: Any):
         """Does logic conjunction. Allowed only for booleans."""
 
-        if left_side.type != Bool() and right_side.type != Bool():
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
+        if left_side.type != Bool() or right_side.type != Bool():
             raise UnexpectedTypeError(f"Expected types Bool Bool. Got {left_side.type} {right_side.type} instead.")
 
         return Literal(typ=Bool(), value=left_side.value and right_side.value)
@@ -476,6 +564,8 @@ class Interpreter(Visitor):
     def add(self, left_side: Any, right_side: Any) -> Literal:
         """Adds two sides (sums numbers or concatenates strings).
         Allowed only for integers, floats, strings."""
+
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
 
         match left_side.type:
             case Integer() if right_side.type == Integer():
@@ -496,6 +586,8 @@ class Interpreter(Visitor):
     def sub(self, left_side: Any, right_side: Any) -> Literal:
         """Calculates difference of two sides. Allowed only for integers and floats."""
 
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
         match left_side.type:
             case Integer() if right_side.type == Integer():
                 return Literal(typ=Integer(), value=left_side.value - right_side.value)
@@ -512,6 +604,8 @@ class Interpreter(Visitor):
     def mul(self, left_side: Any, right_side: Any):
         """Calculates product of two sides. Allowed only for integers and floats."""
 
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
         match left_side.type:
             case Integer() if right_side.type == Integer():
                 return Literal(typ=Integer(), value=left_side.value * right_side.value)
@@ -527,6 +621,8 @@ class Interpreter(Visitor):
 
     def div(self, left_side: Any, right_side: Any):
         """Calculates quotient of two sides. Allowed only for integers and floats."""
+
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
 
         if right_side.value == 0:
             raise DivisionByZeroError()
@@ -547,6 +643,8 @@ class Interpreter(Visitor):
     def modulo(self, left_side: Any, right_side: Any) -> Literal:
         """Calculates modulo of two sides. Allowed only for integers and floats."""
 
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
         if right_side.value == 0:
             raise DivisionByZeroError()
 
@@ -566,6 +664,8 @@ class Interpreter(Visitor):
     def less(self, left_side: Any, right_side: Any) -> Literal:
         """Checks if left_side is lesser than right_side. Allowed only for integers and floats."""
 
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
         match left_side.type:
             case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
                 return Literal(typ=Bool(), value=left_side.value < right_side.value)
@@ -575,6 +675,8 @@ class Interpreter(Visitor):
 
     def greater(self, left_side: Any, right_side: Any) -> Literal:
         """Checks if left_side is greater than right_side. Allowed only for integers and floats."""
+
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
 
         match left_side.type:
             case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
@@ -587,6 +689,8 @@ class Interpreter(Visitor):
     def less_or_equal(self, left_side: Any, right_side: Any) -> Literal:
         """Checks if left_side is lesser than or equal to right_side. Allowed only for integers and floats."""
 
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
         match left_side.type:
             case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
                 return Literal(typ=Bool(), value=left_side.value <= right_side.value)
@@ -597,6 +701,8 @@ class Interpreter(Visitor):
 
     def greater_or_equal(self, left_side: Any, right_side: Any) -> Literal:
         """Checks if left_side is greater than or equal to right_side. Allowed only for integers and floats."""
+
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
 
         match left_side.type:
             case Integer() | Float() if right_side.type == Integer() or right_side.type == Float():
@@ -609,25 +715,30 @@ class Interpreter(Visitor):
     def equal(self, left_side: Any, right_side: Any) -> Literal:
         """Checks if left_side is equal to right_side. Allowed for string, integer, float, bool, null."""
 
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
+
         if str(left_side.type) == "Func" or str(right_side.type) == "Func":
             raise UnexpectedTypeError(f"Cannot check if type {left_side.type} equals type {right_side.type}")
-
-        elif left_side.type == Null() and right_side.type != Null():
-            return Literal(typ=Bool(), value=True)
-
-        elif left_side.type != Null() and right_side.type == Null():
-            return Literal(typ=Bool(), value=True)
 
         elif left_side.type == Null() and right_side.type == Null():
             return Literal(typ=Bool(), value=True)
 
-        # elif left_side.type == Void() or right_side.type == Void():
-        #     raise UnexpectedTypeError(f"Cannot check if type {left_side.type} equals type {right_side.type}")
+        elif left_side.type != Null() and right_side.type == Null():
+            return Literal(typ=Bool(), value=False)
+
+        elif left_side.type == Null() and right_side.type != Null():
+            return Literal(typ=Bool(), value=False)
+
+        elif left_side.type != right_side.type:
+            raise UnexpectedTypeError(
+                f"Cannot check if type {left_side.type} equals type {right_side.type}")
 
         return Literal(typ=Bool(), value=left_side.value == right_side.value)
 
     def not_equal(self, left_side: Any, right_side: Any) -> Literal:
         """Checks if left_side is not equal to right_side. Allowed for string, integer, float, bool, null."""
+
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
 
         if str(left_side.type) == "Func" or str(right_side.type) == "Func":
             raise UnexpectedTypeError(f"Cannot check if type {left_side.type} doesn't equal type {right_side.type}")
@@ -641,13 +752,16 @@ class Interpreter(Visitor):
         elif left_side.type == Null() and right_side.type != Null():
             return Literal(typ=Bool(), value=True)
 
-        # elif left_side.type == Void() or right_side.type == Void():
-        #     raise UnexpectedTypeError(f"Cannot check if type {left_side.type} doesn't equal type {right_side.type}")
+        elif left_side.type != right_side.type:
+            raise UnexpectedTypeError(
+                f"Cannot check if type {left_side.type} equals type {right_side.type}")
 
         return Literal(typ=Bool(), value=left_side.value != right_side.value)
 
     def null_coalesce(self, left_side: Any, right_side: Any) -> Literal:
         """Returns left_side if it is not null, otherwise right_side."""
+
+        left_side, right_side = self.unpack_variable(left_side), self.unpack_variable(right_side)
 
         match left_side.type:
             case Null() | Void():
