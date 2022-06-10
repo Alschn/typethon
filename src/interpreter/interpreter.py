@@ -156,7 +156,7 @@ class Interpreter(Visitor):
             raise NotCallableError(fn_name, lambda_var.type)
 
         if lambda_var:
-            func_def = lambda_var.value
+            func_def = self.unpack_variable(lambda_var)
 
         return_type = getattr(func_def, 'return_type', 'type')
 
@@ -239,21 +239,17 @@ class Interpreter(Visitor):
 
                     try:
                         return_value = self.visit(return_value.body)
-                        if new_ret := self.chained_func_call_helper(return_value, index + 1, func_call):
-                            return self.type_check_return_type(
-                                func_call.name + f"_inner_{index}",
-                                new_ret,
-                                return_value.return_type
-                            )
 
                     except ReturnException as re:
                         return_value = re.value_to_return
-                        if new_ret := self.chained_func_call_helper(return_value, index + 1, func_call):
-                            return self.type_check_return_type(
-                                func_call.name + f"_inner_{index}",
-                                new_ret,
-                                return_value.return_type
-                            )
+
+                    if new_ret := self.chained_func_call_helper(return_value, index + 1, func_call):
+                        self.env.destroy_fun_scope()
+                        return self.type_check_return_type(
+                            func_call.name + f"_inner_{index}",
+                            new_ret,
+                            return_value.return_type
+                        )
 
                     self.env.destroy_fun_scope()
                     return self.type_check_return_type(
@@ -271,6 +267,11 @@ class Interpreter(Visitor):
         var_name = assignment_statement.name
         if not (var := self.env.get_variable(var_name)):
             raise UndefinedNameError(var_name)
+
+        # if a value came from function call, then it could be Literal or Lambda instead of expected Variable
+        # in this case, variable is both mutable and nullable
+        if not isinstance(var, Variable):
+            var = Variable(var_name, typ=var.type, nullable=True, mutable=True)
 
         # if variable is const, then there is no way to reassign value to it
         if not var.mutable:
