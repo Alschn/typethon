@@ -2,7 +2,7 @@
 
 ## Opis
 
-Typethon to wymyślony język przypominający składnią języki Python i Typescript. Pozwala na definiowanie zmiennych
+**Typethon** to wymyślony język przypominający składnią języki Python i Typescript. Pozwala na definiowanie zmiennych
 mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimowe (wyrażenia lambda).
 
 ## Założenia
@@ -25,6 +25,7 @@ mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimo
 ## Zdefiniowane zachowania:
 
 ### Zmienne
+
 - przypisanie wartości typu Null do zmiennej nienullowalnej powoduje rzucenie wyjątku
 - globalną zmienną można nadpisać o ile nie jest `const`
 - zmienna oznaczona przez `const` jest niemutowalna i próba jej modyfikacji poskutkuje rzuceniem wyjątku
@@ -33,8 +34,9 @@ mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimo
 - można rzutować zmienną na inny typ, jednak nie dla każdego typu rzutowanie ma sens
 
 ### Funkcje
+
 - wymagana jest zgodność typów argumentów i typu zwracanego w czasie wykonania funkcji
-(w przeciwnym wypadku rzucenie wyjątku przy próbie wywołania funkcji) - 
+  (w przeciwnym wypadku rzucenie wyjątku przy próbie wywołania funkcji)
 - typy funkcji są zgodne wtedy i tylko wtedy gdy zgadzają się typy argumentów i typ zwracany
 - **argumenty przekazywane przez wartość**
 - funkcja anonimowa może być przekazana jako argument, również przez **wartość**
@@ -44,49 +46,58 @@ mutowalnych, niemutowalnych, a także "nullowalnych". Obsługuje funkcje anonimo
 ### Operatory:
 
 #### Operator `+`
+
 - dla typów Integer, Float dodaje wartości numeryczne
 - dla typów String konkatenuje napisy
 - dla innych błąd
 
 #### Operator `-`
+
 - dla typów Integer, Float odejmuje wartości numeryczne
 - dla innych błąd
 
 #### Operator `*`
+
 - dla typów Integer, Float wykonuje mnożenie wartości numerycznych
 - dla innych błąd
 
 #### Operator `/`
+
 - dla typów Integer, Float wykonuje dzielenie wartości numerycznych
 - dla innych błąd
 - dzielenie przez zero skutuje rzuceniem wyjątku
 
 #### Operator `%`
+
 - dla typów Integer, Float wykonuje dzielenie z resztą wartości numerycznych
 - dla innych błąd
 - dzielenie przez zero skutuje rzuceniem wyjątku
 
 #### Operator `not`
+
 - zdefiniowany dla typu Bool
 - dla innych typów błąd
 
 #### Operatory `and` i `or`
+
 - zdefiniowane dla typów Bool
 - dla innych typów błąd
 
 #### Operatory `>`, `>=`, `<`, `<=`
+
 - zdefiniowane dla typów Integer, Float
 - dla innych typów błąd
 
 #### Operatory `==`, `!=`
+
 - zdefiniowany dla typu Bool, Integer, Float, String
 - dla innych typów błąd
 
 #### Operator `??`
+
 - zwraca lewą stronę wyrażenia, jeśli nie jest typu Null
 - zwraca prawą stronę wyrażenia, jeśli lewa strona jest typu Null
 - jeżeli obydwie strony są typu Null, zwraca prawą stronę
-
 
 ## Przykłady w języku Typethon:
 
@@ -194,7 +205,7 @@ let num: float = (2 + (2 * 3) - 4) % 3;  // This will work
 const num1: int = 1 / 1 + 5 + 7 - 1.5;          // TypeMismatchError: Variable num1 was declared with type Integer but received type Float.
 ```
 
-### operacje dozwolone tylko dla zgodnych typów 
+### operacje dozwolone tylko dla zgodnych typów
 
 ```
 let b: int = 3 + "3";                           // UnexpectedTypeError: Cannot add type Integer to type String
@@ -233,7 +244,7 @@ const res: int = fn(3); // 4
 print(res);
 ```
 
-### równoważny zapis dla fukcji anonimowych
+### równoważny zapis dla funkcji anonimowych
 
 ```
 // lambda: syntax without return
@@ -261,9 +272,9 @@ const b: func((x: int) => func((y: int) => int)) = (x: int): func((y: int) => in
 `String()`     - rzutuje wartość innego typu na wartość typu String, rzuca błąd dla typu Func  
 `Integer()`    - rzutuje wartość innego typu na wartość typu Integer,  
 rzuca błąd dla typów innych niż Integer i Float, rzutowanie Floata na Integera skutkuje zaokrągleniem w dół
-`Float()`      - rzutuje wartość innego typu na wartość typu Float, 
+`Float()`      - rzutuje wartość innego typu na wartość typu Float,
 rzuca błąd dla typów innych niż Integer i Float  
-`Boolean()`    - rzutuje wartość innego typu na wartość typu Bool, rzuca błąd dla typów innych niż Bool i Null,
+`Boolean()`    - rzutuje wartość innego typu na wartość typu Bool, rzuca błąd dla typów innych niż Bool i Null,  
 wartość `null` rzutowana jest na `false`
 ``
 
@@ -404,7 +415,7 @@ MultilineComment = "/", "*", {all utf-8 chars except "*" | "\n"}, "*", "/" ;
 ## Obsługa błędów
 
 - każdy moduł posiada swoją własną nadrzędną klasę wyjątków, która dziedziczy po klasie
-  bazowej `Error(Exception)`. 
+  bazowej `Error(Exception)`.
 - uchwycenie któregoś ze zdefiniowanych wyjątków powoduje przerwanie wykonywania programu
 
 ## Opis testowania
@@ -419,6 +430,7 @@ Przeprowadzone zostały:
 - testy e2e - wykonanie programu przez interpreter
 
 ### Statystyki z testów:
+
 - liczba przypadków testowych (uwzględniając testy parametryzowane): `562`
 - pokrycie kodu testami: `94%`
 
@@ -433,11 +445,13 @@ python cli.py -f <path_to_file>
 ```
 
 Uruchomienie testów jednostkowych
+
 ```
 coverage run unittest -m discover
 ```
 
 Raport z uruchomienia testów jednostkowych z informacją o m.in pokryciu kodu testami
+
 ```
 coverage report -m
 ```
@@ -447,5 +461,21 @@ coverage report -m
 ## Co udało się zrealizować w ramach projektu
 
 Zrealizowano wszystko oprócz:
+
 - traktowania funkcji nazwanych jako zmienne (nie da się przypisać funkcji nazwanej do zmiennej)
 - zakresów widoczności zmiennych wewnątrz lambd (w lambdzie można skorzystać tylko z zmiennych globalnych i argumentów)
+
+---
+
+## Uwagi i rzeczy do poprawy/dodania:
+
+- Brak wyjątku w parserze, gdy nie uda się zbudować Statementu (błąd)
+- Interpreter nie powinien wyświetlać tracebacku (błąd)
+- Brak pozycji w błędach interpretera (błąd)
+- Błędne zachowanie przy redeklaracji zmiennej w scopie "niżej" (błąd; przypisanie obsłużone prawidłowo)
+- Typy lewej i prawej strony Null Coalesce Expression powinny się zgadzać
+  (teraz nie jest to sprawdzane, błąd dopiero przy przypisaniu - uwaga)
+- Obecna implementacja wizytatora jest uproszczona, tak naprawdę nie realizuje wzorca wizytatora (uwaga)
+- Brak opakowania Literal w Variable poskutkowało błędem
+- Obsługi scope'ów w lambdach (niezrealizowane)
+- Definicja funkcji jako zmienna (niezrealizowane)
