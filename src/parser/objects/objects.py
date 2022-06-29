@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Optional
 
-from src.parser.types import Type, Value
+from src.parser.types import Type, Value, Func
 
 
 class Statement:
@@ -10,6 +10,13 @@ class Statement:
 
 class Expression:
     pass
+
+
+class Literal(Expression):
+
+    def __init__(self, typ: Type, value: Value):
+        self.type = typ
+        self.value = value
 
 
 class WhileLoopStatement(Statement):
@@ -52,11 +59,26 @@ class InlineReturnStatement(ReturnStatement):
 
 
 class FunctionDefinition(Statement):
-    def __init__(self, name: str, return_type: Any, arguments: list = None, body=None):
+
+    def __init__(self, name: str, return_type: Any, parameters: list = None, body=None, builtin=False):
         self.name = name
         self.return_type = return_type
-        self.arguments = arguments
+        self.parameters = parameters or []
         self.body = body
+        self._builtin = builtin
+
+        self.type = Func(return_type=return_type, arguments_types=parameters)
+
+    def build_generic_parameters(self, arguments):
+        parameters = []
+
+        if self._builtin:
+            self.body.parameters_list = parameters
+
+        for i, _ in enumerate(arguments):
+            parameters.append(Identifier(chr(97 + i)))
+
+        return parameters
 
 
 class LambdaExpression(Expression):
@@ -64,8 +86,13 @@ class LambdaExpression(Expression):
     def __init__(self, return_type: Any, arguments: list = None, body: Any = None):
         self.name = str(uuid.uuid4())
         self.return_type = return_type
-        self.arguments = arguments
+        self.parameters = arguments or []
         self.body = body
+
+        self.type = Func(return_type=return_type, arguments_types=arguments)
+
+    def build_generic_parameters(self, arguments):
+        return arguments
 
 
 class FunctionCall(Expression):
@@ -77,8 +104,8 @@ class FunctionCall(Expression):
 
 class AssignmentStatement(Statement):
 
-    def __init__(self, symbol: str, right_value: Expression):
-        self.symbol = symbol
+    def __init__(self, name: str, right_value: Expression):
+        self.name = name
         self.right_value = right_value
 
 
@@ -125,8 +152,8 @@ class EqualityExpression(BinaryExpression):
 
 class CompFactor(Expression):
 
-    def __init__(self, factor: Expression, negation: bool):
-        self.factor = factor
+    def __init__(self, neg_factor: Expression, negation: bool):
+        self.factor = neg_factor
         self.negation = negation
 
 
@@ -138,10 +165,17 @@ class MultiplicativeExpression(BinaryExpression):
     pass
 
 
-class Factor(Expression):
-    def __init__(self, value: Expression, minus: bool):
-        self.value = value
+class NegFactor(Expression):
+
+    def __init__(self, factor: Expression, minus: bool):
+        self.factor = factor
         self.minus = minus
+
+
+class Factor(Expression):
+
+    def __init__(self, value: Expression):
+        self.value = value
 
 
 class Variable(Expression):
@@ -149,8 +183,13 @@ class Variable(Expression):
     def __init__(self, name: str, typ: Type, nullable: bool = False, mutable: bool = True):
         self.name = name
         self.type = typ
+
+        # set by parser - controlled by interpreter
         self.nullable = nullable
         self.mutable = mutable
+
+        # set and controlled by interpreter
+        self.value = None
 
 
 class Identifier(Expression):
@@ -159,17 +198,10 @@ class Identifier(Expression):
         self.name = name
 
 
-class Literal(Expression):
-
-    def __init__(self, typ: Type, value: Value):
-        self.type = typ
-        self.value = value
-
-
 class Parameter(Expression):
 
-    def __init__(self, symbol: str, typ: Type, nullable: bool = False, mutable: bool = True):
-        self.symbol = symbol
+    def __init__(self, name: str, typ: Type, nullable: bool = False, mutable: bool = True):
+        self.name = name
         self.type = typ
         self.nullable = nullable
         # parameter's mutability is determined by variable's mutability

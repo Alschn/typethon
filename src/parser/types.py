@@ -7,7 +7,12 @@ Value = str | int | float | bool | None
 
 
 class Type:
-    pass
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __str__(self):
+        return self.__class__.__name__
 
 
 class Integer(Type):
@@ -27,18 +32,32 @@ class String(Type):
 
 
 class Null(Type):
-    pass
+
+    def __eq__(self, other):
+        return type(self) == type(other) or type(other) == Void
 
 
 class Void(Type):
-    pass
+    """Void can only appear in function's signature.
+    It is considered the same as Null type when returned from function."""
+
+    def __eq__(self, other):
+        return type(self) == type(other) or type(other) == Null
 
 
 class Func(Type):
 
-    def __init__(self, arguments_types, return_type: Type):
+    def __init__(self, arguments_types: list, return_type: Type):
         self.input_types = arguments_types
         self.output_type = return_type
+
+    def __eq__(self, other):
+        if not hasattr(other, 'input_types') or not hasattr(other, 'output_type'):
+            return False
+
+        return_match = self.output_type == other.output_type
+        parameters_match = all(s.type == o.type for s, o in zip(self.input_types, other.input_types))
+        return return_match and parameters_match
 
 
 TYPES_MAPPING = {
@@ -103,3 +122,20 @@ OPERATORS = {
 
     TokenType.NULL_COALESCE: OtherOperator.NULL_COALESCE
 }
+
+
+def value_to_string(value: Value) -> str:
+    """Maps python types to Typethon types representation."""
+
+    match value:
+        case None:
+            return "null"
+
+        case True:
+            return "true"
+
+        case False:
+            return "false"
+
+        case _:
+            return str(value)

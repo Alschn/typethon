@@ -2,6 +2,7 @@ import argparse
 import os
 from pathlib import Path
 
+from src.interpreter.interpreter import Interpreter
 from src.lexer.lexer import LexerSkippingComments
 from src.parser.parser import Parser
 from src.source import FileSource
@@ -16,8 +17,10 @@ def main() -> None:
         source = FileSource(file_name=Path(args.file))
         lexer = LexerSkippingComments(source=source)
         parser = Parser(lexer=lexer)
-        program = parser.parse_program()
-        print(program.objects)
+        # program = parser.parse_program()
+        # print(program.objects)
+        interpreter = Interpreter(parser=parser)
+        interpreter.interpret()
 
 
 if __name__ == '__main__':

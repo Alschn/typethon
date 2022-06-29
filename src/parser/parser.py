@@ -15,7 +15,7 @@ from src.parser.objects.objects import (
     FunctionCall, FunctionDefinition, CompoundStatement, EmptyStatement, DeclarationStatement,
     AssignmentStatement, CompFactor, BinaryExpression, Expression, Parameter, Statement, Variable,
     NullCoalesceExpression, OrExpression, AndExpression, AdditiveExpression, MultiplicativeExpression, Literal, Factor,
-    Identifier, EqualityExpression, LambdaExpression, InlineReturnStatement
+    Identifier, EqualityExpression, LambdaExpression, InlineReturnStatement, NegFactor
 )
 from src.parser.objects.program import Program
 from src.parser.types import TYPES_MAPPING, Type, Func, OPERATORS
@@ -33,17 +33,18 @@ class Parser:
     def __init__(self, lexer: Lexer) -> None:
         self.lexer = lexer
         self.lexer.build_next_token()
-        self.top_level_objects = []
 
     def parse_program(self) -> Program:
         """Parser's main method - tries to parse ProgramStatement in a loop"""
 
+        top_level_objects = []
+
         while statement_object := self.try_parse_program_statement():
-            self.top_level_objects.append(statement_object)
+            top_level_objects.append(statement_object)
 
         self.expect_and_consume(TokenType.ETX)
 
-        return Program(self.top_level_objects)
+        return Program(top_level_objects)
 
     def try_parse_program_statement(self) -> Optional[Statement]:
         """Tries to parse either FunctionDefinition or Statement"""
@@ -80,7 +81,7 @@ class Parser:
 
         return FunctionDefinition(
             name=id_token.value,
-            arguments=parameters,
+            parameters=parameters,
             return_type=return_type,
             body=func_body
         )
@@ -146,7 +147,7 @@ class Parser:
         nullable = assign_token == TokenType.TYPE_ASSIGN_NULLABLE
 
         return Parameter(
-            symbol=id_token.value, typ=param_type,
+            name=id_token.value, typ=param_type,
             nullable=nullable, mutable=False  # parameters immutable by default, depends on variables immutability
         )
 
@@ -198,14 +199,16 @@ class Parser:
         if not self.check_and_consume(TokenType.LCURLY):
             return None
 
-        if self.check_and_consume(TokenType.RCURLY):
-            return EmptyStatement()
-
         statements = []
         while statement := self.try_parse_statement():
             statements.append(statement)
 
         self.expect_and_consume(TokenType.RCURLY)
+
+        # if there were no statements and body was properly closed,
+        # then return empty statement
+        if not statements:
+            return EmptyStatement()
 
         return CompoundStatement(statements=statements)
 
@@ -279,11 +282,7 @@ class Parser:
 
         # variables can be uninitialized only if they are declared with `let`
         # and described as nullable with `?:`
-        if not mutable:
-            raise UninitializedConstError(current_token=self.lexer.token)
-
-        if not nullable:
-            raise NotNullableError(assign_token.position)
+        # mutability/nullability is handled by the interpreter, not parser
 
         self.expect_and_consume(TokenType.SEMI)
         return DeclarationStatement(variable, None)
@@ -352,10 +351,8 @@ class Parser:
         if not self.check_and_consume(TokenType.RETURN):
             return None
 
-        if not (expression := self.try_parse_expression()):
-            self.expect_and_consume(TokenType.SEMI)
-            return ReturnStatement(return_expr=None)
-
+        # expression can be None
+        expression = self.try_parse_expression()
         self.expect_and_consume(TokenType.SEMI)
         return ReturnStatement(return_expr=expression)
 
@@ -527,13 +524,13 @@ class Parser:
         return left_expr
 
     def try_parse_mult_factor(self) -> Optional[Expression]:
-        """"Tries to parse multiplicative expression."""
+        """Tries to parse multiplicative expression."""
 
-        left_expr = self.try_parse_factor()
+        left_expr = self.try_parse_neg_factor()
 
         while operator := self.check_one_of_many_and_consume([TokenType.MUL, TokenType.DIV, TokenType.MODULO]):
 
-            if not (expr := self.try_parse_factor()):
+            if not (expr := self.try_parse_neg_factor()):
                 raise InvalidRightExpressionError(self.lexer.token)
 
             left_expr = MultiplicativeExpression(
@@ -542,24 +539,33 @@ class Parser:
 
         return left_expr
 
+    def try_parse_neg_factor(self):
+        """Tries to parse neg factor which stores factor and information
+        about potential arithmetic negation with `-`."""
+
+        seen_minus_token = self.check_and_consume(TokenType.MINUS)
+
+        if not (factor := self.try_parse_factor()):
+            return None
+
+        return NegFactor(factor, bool(seen_minus_token))
+
     def try_parse_factor(self) -> Optional[Factor]:
         """Tries to parse Factor which can be either:
         Literal, Identifier/FunctionCall, nested Expression in parentheses."""
 
-        minus_token = self.check_and_consume(TokenType.MINUS)
-
-        if literal := self.try_parse_literal(minus=bool(minus_token)):
+        if literal := self.try_parse_literal():
             return literal
 
-        if id_or_func_call := self.try_parse_id_or_func_call_or_lambda_expr(minus=bool(minus_token)):
+        if id_or_func_call := self.try_parse_id_or_func_call_or_lambda_expr():
             return id_or_func_call
 
-        if expr_in_parenthesis := self.try_parse_parenthesised_expression(minus=bool(minus_token)):
+        if expr_in_parenthesis := self.try_parse_parenthesised_expression():
             return expr_in_parenthesis
 
         return None
 
-    def try_parse_literal(self, minus: bool) -> Optional[Factor]:
+    def try_parse_literal(self) -> Optional[Factor]:
         """Tries to parse literal and return Factor with Literal object as value,
         and information about potential negation with minus symbol."""
 
@@ -578,12 +584,9 @@ class Parser:
             case _:
                 value = literal_token.value
 
-        return Factor(
-            Literal(typ, value),
-            minus
-        )
+        return Factor(value=Literal(typ, value))
 
-    def try_parse_id_or_func_call_or_lambda_expr(self, minus: bool) -> Optional[Factor]:
+    def try_parse_id_or_func_call_or_lambda_expr(self) -> Optional[Factor]:
         """Tries to parse factors which can begin with identifier. It can either
         be bare identifier, function call or lambda expression. Returns
         expression wrapped in Factor object with value and information about negation."""
@@ -592,13 +595,13 @@ class Parser:
             return None
 
         if func_call := self.try_parse_func_call(func_name=token.value):
-            return Factor(func_call, minus)
+            return Factor(value=func_call)
 
         # lambda expression will be parsed when parser enters nested expression
         if lambda_expr := self.try_parse_rest_of_lambda_definition(token.value):
-            return Factor(lambda_expr, minus)
+            return Factor(value=lambda_expr)
 
-        return Factor(Identifier(token.value), minus)
+        return Factor(value=Identifier(token.value))
 
     def try_parse_rest_of_lambda_definition(self, first_argument_name: str):
         """Tries to parse lambda definition which happened to have an opening parenthesis
@@ -636,7 +639,7 @@ class Parser:
             body=func_body
         )
 
-    def try_parse_parenthesised_expression(self, minus: bool) -> Optional[Factor]:
+    def try_parse_parenthesised_expression(self) -> Optional[Factor]:
         """Tries to parse nested expression - in parentheses.
         It also handles empty lambda definition and call without arguments,
         because of its syntax similarity to expression in parentheses.
@@ -654,12 +657,11 @@ class Parser:
                 self.expect_and_consume(TokenType.ARROW)
                 func_body = self.try_parse_func_body()
                 return Factor(
-                    LambdaExpression(
+                    value=LambdaExpression(
                         return_type=return_type,
                         arguments=[],
                         body=func_body
                     ),
-                    minus
                 )
 
         # else expression in parentheses, which later can recursively become lambda definition
@@ -668,14 +670,15 @@ class Parser:
         match expression:
             # lambda expression is handled as nested expression, it has already been parsed,
             # and should not have an extra closing parenthesis
-            case CompFactor(factor=Factor(value=LambdaExpression())):
-                pass
+            case CompFactor(factor=NegFactor(factor=Factor(value=LambdaExpression()))):
+                # simplify structure (no information is lost)
+                return Factor(value=expression.factor.factor.value)
 
             # require closing parenthesis in other cases
             case _:
                 self.expect_and_consume(TokenType.RPAREN)
 
-        return Factor(expression, minus)
+        return Factor(value=expression)
 
     def check_and_consume(self, token_type: TokenType) -> Optional[Token]:
         """If type is valid, asks lexer for a next token and returns current token,

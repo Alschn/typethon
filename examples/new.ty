@@ -1,0 +1,12 @@
+
+def f(): int => {
+    return 5;
+}
+
+
+def f2(): int => {
+    f();
+}
+
+
+print(f2());

@@ -1,0 +1,23 @@
+
+const a: int = 100;
+
+const add: func((x: int, y: int) => int) = (x: int, y: int): int => x + y;
+const sub: func((x: int, y: int) => int) = (x: int, y: int): int => x - y;
+
+def printOperation(a: int, b: int, callback: func((x: int, y: int) => int)): void => {
+    const result: int = callback(a, b);
+    print(result);
+}
+
+printOperation(1, 2, add);
+printOperation(2, 3, sub);
+
+printOperation(100, 200, (x: int, y: int): int => x * y);
+
+const x: int = 100;
+
+const b: func((x: int, y: int) => int) = (x: int, y: int): int => {
+    x = 12;
+    print(x);
+    return x;
+};
